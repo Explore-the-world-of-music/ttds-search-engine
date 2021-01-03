@@ -1,0 +1,3 @@
+preprocessing:
+  use_stemming: True
+  remove_stop_words: True
