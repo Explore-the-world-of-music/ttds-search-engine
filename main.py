@@ -8,8 +8,15 @@ from ETL.preprocessing import Preprocessor
 from helpers.misc import load_yaml, load_queries
 from search_engine.indexer import Indexer
 from search_engine.retrieval import execute_queries_and_save_results
+from datetime import datetime
+import logging
 
 if __name__ == "__main__":
+
+    # Stop time
+    # Currently it takes two seconds to perform all queries (boolean and ranked)
+    dt_string_START = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    logging.warning(f'START date and time = {dt_string_START}')
 
     # Load config
     config = load_yaml("config/config.yaml")
@@ -44,7 +51,7 @@ if __name__ == "__main__":
     # Todo: Discuss if no class for the retrieval as search strategies are too different for one class
     # Todo: but too similar for different classes?
     for query_num, query in zip(queries_num, queries):
-        execute_queries_and_save_results("Boolean_" + query_num + '_results_queries.txt', query_num, query,
+        execute_queries_and_save_results("data/results/Boolean_" + query_num + '_results_queries.txt', query_num, query,
                                          bool=True, indexer=indexer, preprocessor=preprocessor)
 
     # Load ranked queries
@@ -52,5 +59,8 @@ if __name__ == "__main__":
 
     # Execute queries and save results
     for query_num, query in zip(queries_num, queries):
-        execute_queries_and_save_results("Ranked_" + query_num + '_results_queries.txt', query_num, query,
+        execute_queries_and_save_results("data/results/Ranked_" + query_num + '_results_queries.txt', query_num, query,
                                          bool=False, indexer=indexer, preprocessor=preprocessor)
+
+    dt_string_END = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    logging.warning(f'END date and time = {dt_string_END}')

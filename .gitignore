@@ -1,10 +1,11 @@
-*.txt
 *.png
 *.docx
 *.pdf
 *.xml
+*.xlsx
 *.csv
 *.test
 *.train
-*.xlsx
-*.tsv
+*.tsv`
+*.pyc
+__pycache__/

@@ -35,7 +35,7 @@ class Indexer():
         return index
 
     def add_all_doc_ids(self, doc_ids):
-        self.all_doc_ids = set(doc_ids)
+        self.all_doc_ids = [str(doc_id) for doc_id in doc_ids]
 
     def store_index(self):
         """
@@ -60,8 +60,8 @@ class Indexer():
             line_iter = iter(f.readlines())
             for line in line_iter:
                 if '\t' not in line:
-                    index[re.findall(r"[\w']+", line)] = {}
-                    current_key = re.findall(r"[\w']+", line)
+                    current_key = re.findall(r"[\w']+", line)[0]
+                    index[current_key] = {}
                 else:
                     line = line.replace("\n", "").replace("\t", "").replace(" ", "")
                     document = line.split(":")[0]

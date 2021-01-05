@@ -14,8 +14,11 @@ def find_docs_with_term(term, index):
     :param index: Index in which to search (dict)
     :return: list of relevant doc ids (list)
     """
-    docs_info = index[term]
-    rel_doc_ids = [doc for doc in docs_info.keys()]
+    try:
+        docs_info = index[term]
+        rel_doc_ids = [doc for doc in docs_info.keys()]
+    except:
+        rel_doc_ids = []
 
     return rel_doc_ids
 
@@ -200,6 +203,7 @@ def execute_queries_and_save_results(filepath, query_num, query, bool, indexer, 
     # Initiate result string
     text = ""
 
+    # Execute search for boolean queries
     if bool:
         rel_docs = execute_search(query, indexer, preprocessor)
         if len(rel_docs) > 0:
@@ -210,6 +214,7 @@ def execute_queries_and_save_results(filepath, query_num, query, bool, indexer, 
         with open(filepath, mode="w", encoding="utf-8") as f:
             f.writelines(text[:-1])
 
+    # Execute search for ranked queries
     else:
         terms = query.split()
         terms = [preprocessor.preprocess(term)[0] for term in terms if len(preprocessor.preprocess(term)) > 0]
