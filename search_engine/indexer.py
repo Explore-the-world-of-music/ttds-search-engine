@@ -15,8 +15,9 @@ class Indexer():
     """
     def __init__(self, config):
         self.index = None
+        self.all_docs_ids = None
 
-    def build_index(self, preprocessor, doc_ids, raw_doc_texts):
+    def build_index(self, preprocessor, doc_ids, raw_doc_texts, store_all_doc_ids = True):
         """
         Function to build the index based on given documents
 
@@ -37,6 +38,9 @@ class Indexer():
 
         self.index = index
         return index
+
+    def add_all_doc_ids(self,doc_ids):
+        self.all_doc_ids = set(doc_ids)
 
     def store_index(self):
         """

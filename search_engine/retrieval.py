@@ -38,7 +38,7 @@ def get_rel_doc_pos(term, index):
     return [docs_info[doc] for doc in docs_info.keys()]
 
 
-def simple_bool_search(rel_docs_t1, rel_docs_t2, bool_val="AND"):
+def simple_bool_search(rel_docs_t1, rel_docs_t2, indexer, bool_val="AND"):
     '''
     Executes a simple boolean search between two lists of relevant docs.
 
@@ -62,10 +62,8 @@ def simple_bool_search(rel_docs_t1, rel_docs_t2, bool_val="AND"):
 
     elif bool_val == "OR NOT":
         print("here")
-        # Todo: Think about how to solve to find all doc ids and not only the highest
-        # Todo: Then loop over all doc ids
         return list(
-            set([doc_id for doc_id in np.arange(1, max_doc_id + 1, 1) if doc_id not in rel_docs_t2] + rel_docs_t1))
+            set([doc_id for doc_id in indexer.all_doc_ids if doc_id not in rel_docs_t2] + rel_docs_t1))
 
     else:
         raise Exception(
@@ -73,7 +71,7 @@ def simple_bool_search(rel_docs_t1, rel_docs_t2, bool_val="AND"):
                 bool_val))
 
 
-def simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, n=1, phrase=False):
+def simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, indexer, n=1, phrase=False):
     '''
     Calculates if term1 and term2 are in the same document with less or equal to n distance and return relevant doc_ids. Option to perform phrase search.
 
@@ -90,7 +88,7 @@ def simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_po
     '''
 
     # Performs a boolean search to get documents which contain both terms
-    rel_documents_both_terms = simple_bool_search(rel_docs_t1, rel_docs_t2, bool_val="AND")
+    rel_documents_both_terms = simple_bool_search(rel_docs_t1, rel_docs_t2, indexer=indexer, bool_val="AND")
 
     # create boolean masks to match extracte the relevant doc_pos parts
     bool_mask_t1 = [True if doc in rel_documents_both_terms else False for doc in rel_docs_t1]
@@ -120,7 +118,7 @@ def simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_po
     return list(set(final_rel_doc_ids))
 
 
-def simple_tfidf_search(terms, index):
+def simple_tfidf_search(terms, indexer):
     '''
     Calculates the TF-IDF score for multiple terms and returns an ordered dict.
 
@@ -132,11 +130,12 @@ def simple_tfidf_search(terms, index):
     '''
 
     doc_relevance = {}
+    total_num_docs = len(indexer.all_doc_ids)
 
     for t in terms:
-        df = index[t][0]
-        rel_docs = find_docs_with_term(t)
-        tfs_docs = [len(doc) for doc in get_rel_doc_pos(t)]
+        df = len(indexer.index[t].keys())
+        rel_docs = find_docs_with_term(t, indexer.index)
+        tfs_docs = [len(doc) for doc in get_rel_doc_pos(t,indexer.index)]
         weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
 
         for doc_id, weight in zip(rel_docs, weights_docs):
@@ -149,7 +148,7 @@ def simple_tfidf_search(terms, index):
     sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
     return sorted_relevance
 
-def execute_search(query, index, preprocessor):
+def execute_search(query, indexer, preprocessor):
     '''
     Checks, which type of search has to be done. Executes the search and returns the resulting, relevant doc_ids
 
@@ -169,41 +168,41 @@ def execute_search(query, index, preprocessor):
         type_of_bool_search = bool_pattern.search(query).group(0)
         t1, t2 = query.split(type_of_bool_search)
 
-        rel_docs_t1 = execute_search(t1, index, preprocessor)
-        rel_docs_t2 = execute_search(t2, index, preprocessor)
-        return simple_bool_search(rel_docs_t1, rel_docs_t2, bool_val=type_of_bool_search.strip())
+        rel_docs_t1 = execute_search(t1, indexer, preprocessor)
+        rel_docs_t2 = execute_search(t2, indexer, preprocessor)
+        return simple_bool_search(rel_docs_t1, rel_docs_t2, indexer = indexer, bool_val=type_of_bool_search.strip())
 
     # check if proximity search
     elif prox_pattern.search(query) != None:
         n = int(prox_pattern.search(query).group(0)[1:])
         t1, t2 = [re.sub('[^a-zA-Z]+', '', term) for term in query.split(",")]
 
-        rel_docs_t1 = execute_search(t1, index, preprocessor)
-        rel_docs_t2 = execute_search(t2, index, preprocessor)
-        rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], index)
-        rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], index)
-        return simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, n)
+        rel_docs_t1 = execute_search(t1, indexer, preprocessor)
+        rel_docs_t2 = execute_search(t2, indexer, preprocessor)
+        rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], indexer.index)
+        rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], indexer.index)
+        return simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, indexer = indexer, n = n)
 
     # check if phrase search --> same as priximity search with n = 1
     elif phra_pattern.search(query) != None:
         t1, t2 = re.sub('"', "", query).split()
 
-        rel_docs_t1 = execute_search(t1, index, preprocessor)
-        rel_docs_t2 = execute_search(t2, index, preprocessor)
-        rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], index)
-        rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], index)
-        return simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, n = 1, phrase = True)
+        rel_docs_t1 = execute_search(t1, indexer, preprocessor)
+        rel_docs_t2 = execute_search(t2, indexer, preprocessor)
+        rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], indexer.index)
+        rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], indexer.index)
+        return simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, indexer = indexer, n = 1, phrase = True)
 
     # if nothing else matches --> make a simple search
     else:
-        results = find_docs_with_term(preprocessor.preprocess(query)[0], index)
+        results = find_docs_with_term(preprocessor.preprocess(query)[0], indexer.index)
         return results
 
-def execute_queries_and_save_results(filepath, query_num, query, bool, index, preprocessor):
+def execute_queries_and_save_results(filepath, query_num, query, bool, indexer, preprocessor):
 
     text = ""
     if bool:
-        rel_docs = execute_search(query, index, preprocessor)
+        rel_docs = execute_search(query, indexer, preprocessor)
         if len(rel_docs) > 0:
             rel_docs.sort(key = float)
             for rel_doc in rel_docs:
@@ -212,19 +211,16 @@ def execute_queries_and_save_results(filepath, query_num, query, bool, index, pr
         with open(filepath, mode = "w", encoding = "utf-8") as f:
             f.writelines(text[:-1])
 
-    # else:
-    #     terms = query.split()
-    #     terms = [process_term(term) for term in terms if process_term(term) != None]
-    #     rel_docs = simple_tfidf_search(terms)
-    #     #print(type(rel_docs))
-    #
-    #     if len(rel_docs) == 0:
-    #         continue
-    #
-    #     if len(rel_docs) > 150:
-    #         rel_docs = rel_docs[:150]
-    #     for doc_id, value in rel_docs:
-    #         text += f"{query_num},{doc_id},{round(value,4)}\n"
-    #
-    #     with open(filepath_res_rank, mode = "w", encoding = "utf-8") as f:
-    #         f.writelines(text[:-1])
+    else:
+        terms = query.split()
+        terms = [preprocessor.preprocess(term)[0] for term in terms if len(preprocessor.preprocess(term))>0]
+        rel_docs = simple_tfidf_search(terms, indexer)
+
+        if len(rel_docs) > 0:
+            if len(rel_docs) > 150:
+                rel_docs = rel_docs[:150]
+            for doc_id, value in rel_docs:
+                text += f"{query_num},{doc_id},{round(value,4)}\n"
+
+            with open(filepath, mode = "w", encoding = "utf-8") as f:
+                f.writelines(text[:-1])

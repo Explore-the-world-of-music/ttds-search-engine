@@ -16,6 +16,18 @@ def load_yaml(yaml_file_path):
         yaml_output = yaml.safe_load(stream)
     return yaml_output
 
+def save_yaml(yaml_file_path, data):
+    """
+    Function to save list to a yaml file
+
+    yaml_file_path (str): the path of the yaml file to store
+    data (list): Object to be stored in yaml
+    """
+
+    with open(yaml_file_path,"w") as file:
+        yaml_output = yaml.safe_load(stream)
+    return yaml_output
+
 # Todo: Take out again when not needed anymore
 def load_queries(filepath):
     with open(filepath, mode="r", encoding="utf-8") as f:

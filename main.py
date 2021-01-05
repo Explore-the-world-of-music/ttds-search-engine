@@ -25,15 +25,18 @@ if __name__ == "__main__":
     indexer = Indexer(config)
 
     # Build index
-    # index = indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
+    # indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
 
     # Save index
     # indexer.store_index()
 
-    # Load index (for testing)
-    index = indexer.load_index()
+    # Add doc ids as index attribute
+    indexer.add_all_doc_ids(doc_ids)
 
-    # Load queries
+    # Load index (for testing)
+    indexer.index = indexer.load_index()
+
+    # Load boolean queries
     # Todo: Embed into final infrastructure - one query at a time?
     queries_num, queries = load_queries('queries.boolean.txt')
 
@@ -42,7 +45,17 @@ if __name__ == "__main__":
     # Todo: Discuss if no class for the retrieval as search strategies are too different for one class
     # Todo: but too similar for different classes?
     for query_num, query in zip(queries_num, queries):
-        execute_queries_and_save_results(query_num + "__" + 'results_queries.boolean.txt', query_num, query, bool = True, index = index, preprocessor=preprocessor)
+        execute_queries_and_save_results("Boolean_" + query_num + '_results_queries.txt', query_num, query,
+                                         bool = True, indexer = indexer, preprocessor=preprocessor)
+
+    # Load ranked queries
+    # Todo: Embed into final infrastructure - one query at a time?
+    queries_num, queries = load_queries('queries.ranked.txt')
+
+    # execute_queries_and_save_results
+    for query_num, query in zip(queries_num, queries):
+        execute_queries_and_save_results("Ranked_" + query_num + '_results_queries.txt', query_num, query,
+                                         bool = False, indexer = indexer, preprocessor=preprocessor)
 
 
 
