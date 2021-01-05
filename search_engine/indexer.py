@@ -2,10 +2,6 @@
 This module creates the indexer class to create the index
 """
 
-import pandas as pd
-import numpy as np
-import yaml
-from nltk.stem import PorterStemmer
 import re
 from collections import defaultdict
 
@@ -17,18 +13,17 @@ class Indexer():
         self.index = None
         self.all_docs_ids = None
 
-    def build_index(self, preprocessor, doc_ids, raw_doc_texts, store_all_doc_ids = True):
+    def build_index(self, preprocessor, doc_ids, raw_doc_texts):
         """
         Function to build the index based on given documents
 
-        :param preprocessor: Preprocessor class instance
-        :param doc_ids: List of document ids
-        :param raw_doc_texts: List of document texts
-        :return: index as dictionary
+        :param preprocessor: Preprocessor class instance (Preprocessor)
+        :param doc_ids: List of document ids (list)
+        :param raw_doc_texts: List of document texts (list)
+        :return: index (dict)
         """
-        # Todo: Think about delta index as Ivan did
         # Initiate empty index dict
-        index = defaultdict(lambda : defaultdict(list))
+        index = defaultdict(lambda: defaultdict(list))
 
         # Create dictionary entry for each token and doc id
         for doc_id, raw_line in zip(doc_ids, raw_doc_texts):
@@ -39,14 +34,12 @@ class Indexer():
         self.index = index
         return index
 
-    def add_all_doc_ids(self,doc_ids):
+    def add_all_doc_ids(self, doc_ids):
         self.all_doc_ids = set(doc_ids)
 
     def store_index(self):
         """
-        Function to save final index in a defined format
-        :param file_path: output path
-        :return: None
+        Function to save final index in a defined txt format
         """
         with open("index.txt", "w") as text_output:
             for term in sorted(self.index.keys()):
@@ -57,40 +50,21 @@ class Indexer():
 
     def load_index(self):
         """
-        Function to load index from file
-
-        return: loaded index
+        Function to load index from txt file
+        :return: index (dict)
         """
-
-        # Define a few helper functions
-        def extract_word(line):
-            word = re.findall(r"[\w']+", line)
-            return word[0]
-        def extract_document(line):
-            document = line.split(":")[0]
-            return document
-        def extract_indices(line):
-            indices = line.split(":")[1].split(",")
-            return indices
-
         # Initialise empty dictionary to store index
         index = {}
 
         with open('index.txt', "r", encoding="utf8") as f:
-
             line_iter = iter(f.readlines())
             for line in line_iter:
                 if '\t' not in line:
-                    index[extract_word(line)] = {}
-                    current_key = extract_word(line)
+                    index[re.findall(r"[\w']+", line)] = {}
+                    current_key = re.findall(r"[\w']+", line)
                 else:
                     line = line.replace("\n", "").replace("\t", "").replace(" ", "")
-                    document = extract_document(line)
-                    index[current_key][document] = extract_indices(line)
+                    document = line.split(":")[0]
+                    index[current_key][document] = line.split(":")[1].split(",")
 
         return index
-
-
-
-
-

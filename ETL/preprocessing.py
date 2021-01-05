@@ -2,15 +2,12 @@
 This module creates the preprocessor class to load and preprocess the data
 """
 
-import pandas as pd
-import numpy as np
-import yaml
 from nltk.stem import PorterStemmer
 import re
 import os
 import xml.etree.ElementTree as ET
 
-# Todo: Check if there is a smarter way to do it for all files at once
+# Set path as needed for Preprocessor class
 path = os.path.abspath(__file__)
 dname = os.path.dirname(os.path.dirname(path))
 os.chdir(dname)
@@ -23,8 +20,6 @@ class Preprocessor():
         self.stemmer = PorterStemmer()
         self.stopping = config["preprocessing"]["remove_stop_words"]
         self.stemming = config["preprocessing"]["use_stemming"]
-        self.tokens = list()
-        self.doc_ids = list()
         self.stop_set = set()
         with open("data/stopping_words.txt", "r") as stop:
             for word in stop:
@@ -46,8 +41,9 @@ class Preprocessor():
     def preprocess(self, line):
         """
         Function to perform the preprocessing for one line
-        :param line: Raw input line
-        :return: Preprocessed line
+
+        :param line: Raw input line (str)
+        :return: Preprocessed line (str)
         """
         tokenized = re.findall("[\w]+", line)
         line = [x.lower() for x in tokenized if x != ""]
