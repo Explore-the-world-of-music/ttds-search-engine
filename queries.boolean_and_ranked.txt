@@ -1,0 +1,8 @@
+1 Edinburgh AND Scotland
+2 income tax reduction
+3 income tax reduction NOT YouNeverFindme
+4 income tax reduction NOT Happiness
+5 "income tax" reduction
+6 "income tax" reduction NOT YouNeverFindme
+7 "income tax" reduction NOT Happiness
+

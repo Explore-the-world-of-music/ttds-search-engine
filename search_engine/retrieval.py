@@ -115,14 +115,14 @@ def simple_tfidf_search(terms, indexer):
 
     :param terms: List of terms contained in search (list)
     :param indexer: Class instance for the created index (Indexer)
-    :return: Descending sorted dictionary with doc_id as key and TF-IDF as value (dict)
+    :return: Descending sorted pseudo-dictionary with doc_id as key and TF-IDF as value (list)
     """
     doc_relevance = {}
     total_num_docs = len(indexer.all_doc_ids)
 
     for t in terms:
-        df = len(indexer.index[t].keys())
         rel_docs = find_docs_with_term(t, indexer.index)
+        df = len(rel_docs)
         tfs_docs = [len(doc) for doc in get_rel_doc_pos(t, indexer.index)]
         weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
 
@@ -132,6 +132,32 @@ def simple_tfidf_search(terms, indexer):
                 doc_relevance[doc_id] = weight
             else:
                 doc_relevance[doc_id] += weight
+
+    sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
+    return sorted_relevance
+
+
+def calculate_tfidf(rel_docs, tfs_docs, indexer):
+    """
+    Calculates the TF-IDF score for given search results for one search term
+
+    :param rel_docs: List of relevant documents (list)
+    :param tfs_docs: Term frequency in the relevant documents (list)
+    :param indexer: Class instance for the created index (Indexer)
+    :return: Descending sorted dictionary with doc_id as key and TF-IDF as value (dict)
+    """
+    doc_relevance = {}
+    total_num_docs = len(indexer.all_doc_ids)
+    df = len(rel_docs) # document frequency
+
+    # Calculate the weights per document
+    weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
+
+    for doc_id, weight in zip(rel_docs, weights_docs):
+        if doc_id not in doc_relevance:
+            doc_relevance[doc_id] = weight
+        else:
+            doc_relevance[doc_id] += weight
 
     sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
     return sorted_relevance
@@ -189,42 +215,55 @@ def execute_search(query, indexer, preprocessor):
         return results
 
 
-def execute_queries_and_save_results(filepath, query_num, query, bool, indexer, preprocessor):
+def execute_queries_and_save_results(query_num, query, search_type, indexer, preprocessor, config):
     """
-    Function to execute search and store results
-    :param filepath: Path where results should be stored (str)
+    Function to execute search and return results
     :param query_num: Number of query (int)
     :param query: Query that should be searched (str)
-    :param bool: Parameter if it is a boolean search (bool)
+    :param search_type: Parameter which search type it is (str)
     :param indexer: Class instance for the created index (Indexer)
     :param preprocessor: Preprocessor class instance (Preprocessor)
-    :return: None
+    :param config: Defined configuration settings (dict)
+    :return: results (str)
     """
     # Initiate result string
-    text = ""
+    results = ""
 
+    # Todo: Take out boolean search type
     # Execute search for boolean queries
-    if bool:
+    if search_type == "boolean":
         rel_docs = execute_search(query, indexer, preprocessor)
         if len(rel_docs) > 0:
             rel_docs.sort(key=float)
             for rel_doc in rel_docs:
-                text += f"{query_num},{rel_doc}\n"
+                results += f"{query_num},{rel_doc}\n"
 
-        with open(filepath, mode="w", encoding="utf-8") as f:
-            f.writelines(text[:-1])
+        return results
 
+    # Todo: Take out boolean tfidf type
     # Execute search for ranked queries
-    else:
+    if search_type == "tfidf":
         terms = query.split()
         terms = [preprocessor.preprocess(term)[0] for term in terms if len(preprocessor.preprocess(term)) > 0]
         rel_docs = simple_tfidf_search(terms, indexer)
 
         if len(rel_docs) > 0:
-            if len(rel_docs) > 150:
-                rel_docs = rel_docs[:150]
+            if len(rel_docs) > config["retrieval"]["number_ranked_documents"]:
+                rel_docs = rel_docs[:config["retrieval"]["number_ranked_documents"]]
             for doc_id, value in rel_docs:
-                text += f"{query_num},{doc_id},{round(value, 4)}\n"
+                results += f"{query_num},{doc_id},{round(value, 4)}\n"
 
-            with open(filepath, mode="w", encoding="utf-8") as f:
-                f.writelines(text[:-1])
+            return results
+
+    # if search_type == "boolean_and_tfidf":
+    #     # Execute search for boolean queries
+    #     rel_docs, tfs_docs = execute_search(query, indexer, preprocessor)
+    #
+    #     rel_docs_with_tfidf = calculate_tfidf(rel_docs, tfs_docs, indexer)
+    #
+    #     if len(rel_docs_with_tfidf) > 0:
+    #         if len(rel_docs_with_tfidf) > config["retrieval"]["number_ranked_documents"]:
+    #             rel_docs = rel_docs[:config["retrieval"]["number_ranked_documents"]]
+    #         for doc_id, value in rel_docs_with_tfidf:
+    #             results += f"{query_num},{doc_id},{round(value, 4)}\n"
+    #         return results

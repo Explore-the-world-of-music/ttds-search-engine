@@ -3,6 +3,7 @@ This module contains general helper functions with no single purpose
 """
 
 import yaml
+from collections import defaultdict
 
 def load_yaml(yaml_file_path):
     """
@@ -23,3 +24,10 @@ def load_queries(filepath):
     query_num = [query[0] for query in queries]
     query = [" ".join(query[1:]) for query in queries]
     return query_num, query
+
+def create_default_dict_list():
+    """
+    Helper function to picke a default dictionary
+    :return: default dict with list
+    """
+    return defaultdict(list)
