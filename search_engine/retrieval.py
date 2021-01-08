@@ -2,7 +2,7 @@
 This module creates the retrieval class to return the search results
 """
 import re
-
+import collections
 import numpy as np
 
 
@@ -15,8 +15,7 @@ def find_docs_with_term(term, index):
     :return: list of relevant doc ids (list)
     """
     try:
-        docs_info = index[term]
-        rel_doc_ids = [doc for doc in docs_info.keys()]
+        rel_doc_ids = list(index[term].keys())
     except:
         rel_doc_ids = []
 
@@ -33,6 +32,38 @@ def get_rel_doc_pos(term, index):
     """
     docs_info = index[term]
     return [docs_info[doc] for doc in docs_info.keys()]
+
+
+def get_tfs_docs(term, index):
+    """
+    Returns term frequencies of a term in the documents
+
+    :param term: The searched term (str)
+    :param index: Index in which to search (dict)
+    :return: term frequencies of term for related doc ids (dict)
+    """
+    try:
+        tfs_docs = index[term].copy()
+        tfs_docs = collections.defaultdict(int, tfs_docs)
+        for doc in tfs_docs.keys():
+            tfs_docs[doc] = len(tfs_docs[doc])
+    except:
+        tfs_docs = dict()
+
+    return tfs_docs
+
+def get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2):
+    """
+    Returns term frequencies of a boolean query
+
+    :param rel_docs: List of all doc_ids which are relevant for this boolean search (list)
+    :param tfs_docs_t1: Term frequencies for term 1 (dict)
+    :param tfs_docs_t2: Term frequencies for term 2 (dict)
+    :return: term frequencies which are relevant for this boolean search (dict)
+    """
+    tfs_docs = [tfs_docs_t1[doc] + tfs_docs_t2[doc] for doc in rel_docs]
+
+    return tfs_docs
 
 
 def simple_bool_search(rel_docs_t1, rel_docs_t2, indexer, bool_val="AND"):
@@ -106,7 +137,10 @@ def simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_po
                         final_rel_doc_ids.append(doc_id)
                         break
 
-    return list(set(final_rel_doc_ids))
+    tfs_docs = dict(collections.Counter(final_rel_doc_ids))
+    final_rel_doc_ids = sorted(list(set(final_rel_doc_ids)))
+
+    return final_rel_doc_ids, tfs_docs
 
 
 def simple_tfidf_search(terms, indexer):
@@ -183,36 +217,46 @@ def execute_search(query, indexer, preprocessor):
         type_of_bool_search = bool_pattern.search(query).group(0)
         t1, t2 = query.split(type_of_bool_search)
 
-        rel_docs_t1 = execute_search(t1, indexer, preprocessor)
-        rel_docs_t2 = execute_search(t2, indexer, preprocessor)
-        return simple_bool_search(rel_docs_t1, rel_docs_t2, indexer=indexer, bool_val=type_of_bool_search.strip())
+        rel_docs_t1, tfs_docs_t1 = execute_search(t1, indexer, preprocessor)
+        rel_docs_t2, tfs_docs_t2 = execute_search(t2, indexer, preprocessor)
+        rel_docs = simple_bool_search(rel_docs_t1, rel_docs_t2, indexer=indexer, bool_val=type_of_bool_search.strip())
+        tfs_docs = get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2)
+
+        return rel_docs, tfs_docs
 
     # check if proximity search
     elif prox_pattern.search(query) != None:
         n = int(prox_pattern.search(query).group(0)[1:])
         t1, t2 = [re.sub('[^a-zA-Z]+', '', term) for term in query.split(",")]
 
-        rel_docs_t1 = execute_search(t1, indexer, preprocessor)
-        rel_docs_t2 = execute_search(t2, indexer, preprocessor)
+        rel_docs_t1, _ = execute_search(t1, indexer, preprocessor)
+        rel_docs_t2, _ = execute_search(t2, indexer, preprocessor)
         rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], indexer.index)
         rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], indexer.index)
-        return simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, indexer=indexer, n=n)
+
+        rel_docs, tfs_docs = simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2,
+                                                     indexer=indexer, n=n)
+        return rel_docs, tfs_docs
 
     # check if phrase search --> same as proximity search with n = 1
     elif phra_pattern.search(query) != None:
         t1, t2 = re.sub('"', "", query).split()
 
-        rel_docs_t1 = execute_search(t1, indexer, preprocessor)
-        rel_docs_t2 = execute_search(t2, indexer, preprocessor)
+        rel_docs_t1, _ = execute_search(t1, indexer, preprocessor)
+        rel_docs_t2, _ = execute_search(t2, indexer, preprocessor)
         rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], indexer.index)
         rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], indexer.index)
-        return simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, indexer=indexer, n=1,
-                                       phrase=True)
+
+        rel_docs, tfs_docs = simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2,
+                                                     rel_doc_pos_t2, indexer=indexer, n=1, phrase=True)
+        return rel_docs, tfs_docs
 
     # if nothing else matches --> make a simple search
     else:
         results = find_docs_with_term(preprocessor.preprocess(query)[0], indexer.index)
-        return results
+        tfs_docs = get_tfs_docs(preprocessor.preprocess(query)[0], indexer.index)
+
+        return results, tfs_docs
 
 
 def execute_queries_and_save_results(query_num, query, search_type, indexer, preprocessor, config):
@@ -232,7 +276,7 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
     # Todo: Take out boolean search type
     # Execute search for boolean queries
     if search_type == "boolean":
-        rel_docs = execute_search(query, indexer, preprocessor)
+        rel_docs, _ = execute_search(query, indexer, preprocessor)
         if len(rel_docs) > 0:
             rel_docs.sort(key=float)
             for rel_doc in rel_docs:
@@ -255,15 +299,15 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
 
             return results
 
-    # if search_type == "boolean_and_tfidf":
-    #     # Execute search for boolean queries
-    #     rel_docs, tfs_docs = execute_search(query, indexer, preprocessor)
-    #
-    #     rel_docs_with_tfidf = calculate_tfidf(rel_docs, tfs_docs, indexer)
-    #
-    #     if len(rel_docs_with_tfidf) > 0:
-    #         if len(rel_docs_with_tfidf) > config["retrieval"]["number_ranked_documents"]:
-    #             rel_docs = rel_docs[:config["retrieval"]["number_ranked_documents"]]
-    #         for doc_id, value in rel_docs_with_tfidf:
-    #             results += f"{query_num},{doc_id},{round(value, 4)}\n"
-    #         return results
+    if search_type == "boolean_and_tfidf":
+        # Execute search for boolean queries
+        rel_docs, tfs_docs = execute_search(query, indexer, preprocessor)
+
+        rel_docs_with_tfidf = calculate_tfidf(rel_docs, tfs_docs, indexer)
+
+        if len(rel_docs_with_tfidf) > 0:
+            if len(rel_docs_with_tfidf) > config["retrieval"]["number_ranked_documents"]:
+                rel_docs = rel_docs[:config["retrieval"]["number_ranked_documents"]]
+            for doc_id, value in rel_docs_with_tfidf:
+                results += f"{query_num},{doc_id},{round(value, 4)}\n"
+            return results
