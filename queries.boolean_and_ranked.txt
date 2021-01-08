@@ -13,6 +13,13 @@
 13 coconut AND NOT Hound
 14 coconut OR Hound
 15 coconut OR NOT Hound
-16 #15(dow,stocks)
-17 #15(dow,stocks)
-18 "wall street" AND "dow jones"
+16 "income taxes"
+17 #20(income, taxes)
+18 "middle east" AND peace
+19 "islam religion"
+20 "Financial times" AND NOT BBC
+21 "wall street" AND "dow jones"
+22 #15(dow,stocks)
+23 DaswirdwohlniegefundenwerdenHoffentlich OR NOT Happiness
+24 Edinburgh OR NOT Happiness
+25 #1(income, taxes)

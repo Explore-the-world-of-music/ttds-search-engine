@@ -72,7 +72,7 @@ def get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2, bool_val):
         # documents in which t2 is not found
         tfs_docs = collections.defaultdict(int)
         for doc in rel_docs:
-            tf_doc_t1 = tfs_docs_t1[doc] * 10
+            tf_doc_t1 = tfs_docs_t1[doc] * 100
             if doc not in tfs_docs_t2.keys():
                 tf_doc_t2 = 1
             else: tf_doc_t2 = 0
@@ -205,7 +205,12 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer):
 
     # Calculate the weights per document
     if df > 0:
-        weights_docs = [(1 + np.log10(tfs_docs[key])) * np.log10(total_num_docs / df) for key in tfs_docs.keys()]
+        # Please note that the factor 0.000001 was added to differentiate documents in ranking even if
+        # all documents of the collection are part of the relevant documents
+        if total_num_docs == df:
+            weights_docs = [(1 + np.log10(tfs_docs[key])) * 1 for key in tfs_docs.keys()]
+        else:
+            weights_docs = [(1 + np.log10(tfs_docs[key])) * (np.log10(total_num_docs / df)) for key in tfs_docs.keys()]
     else:
         weights_docs = []
 
@@ -336,7 +341,7 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
 
         if len(rel_docs_with_tfidf) > 0:
             if len(rel_docs_with_tfidf) > config["retrieval"]["number_ranked_documents"]:
-                rel_docs = rel_docs[:config["retrieval"]["number_ranked_documents"]]
+                rel_docs_with_tfidf = rel_docs_with_tfidf[:config["retrieval"]["number_ranked_documents"]]
             for doc_id, value in rel_docs_with_tfidf:
                 results += f"{query_num},{doc_id},{round(value, 4)}\n"
 

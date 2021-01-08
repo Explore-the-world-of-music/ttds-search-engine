@@ -76,7 +76,7 @@ if __name__ == "__main__":
     #     f.writelines(results[:-1])
 
     # Load boolean + ranked queries
-    queries_num, queries = load_queries('queries.boolean_and_ranked_V2.txt')
+    queries_num, queries = load_queries('queries.boolean_and_ranked.txt')
 
     # Execute Boolean Ranked queries
     results = ""
