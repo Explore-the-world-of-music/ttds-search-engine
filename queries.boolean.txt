@@ -9,3 +9,4 @@
 9 "wall street" AND "dow jones"
 10 #15(dow,stocks)
 11 DaswirdwohlniegefundenwerdenHoffentlich OR NOT Happiness
+12 Edinburgh OR NOT Happiness

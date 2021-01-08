@@ -1,8 +1,18 @@
-1 Edinburgh AND Scotland
-2 income tax reduction
-3 income tax reduction NOT YouNeverFindme
-4 income tax reduction NOT Happiness
-5 "income tax" reduction
-6 "income tax" reduction NOT YouNeverFindme
-7 "income tax" reduction NOT Happiness
-
+1 Hound
+2 Daswirdwohlniegefunden AND Hound
+3 Daswirdwohlniegefunden AND NOT Hound
+4 Daswirdwohlniegefunden OR Hound
+5 Daswirdwohlniegefunden OR NOT Hound
+6 sane
+7 sane AND Hound
+8 sane AND NOT Hound
+9 sane OR Hound
+10 sane OR NOT Hound
+11 coconut
+12 coconut AND Hound
+13 coconut AND NOT Hound
+14 coconut OR Hound
+15 coconut OR NOT Hound
+16 #15(dow,stocks)
+17 #15(dow,stocks)
+18 "wall street" AND "dow jones"

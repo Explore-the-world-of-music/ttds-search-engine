@@ -1,8 +1,9 @@
 """
 This module creates the retrieval class to return the search results
 """
-import re
 import collections
+import re
+
 import numpy as np
 
 
@@ -42,28 +43,46 @@ def get_tfs_docs(term, index):
     :param index: Index in which to search (dict)
     :return: term frequencies of term for related doc ids (dict)
     """
-    try:
-        tfs_docs = index[term].copy()
-        tfs_docs = collections.defaultdict(int, tfs_docs)
-        for doc in tfs_docs.keys():
-            tfs_docs[doc] = len(tfs_docs[doc])
-    except:
-        tfs_docs = dict()
+    tfs_docs = index[term].copy()
+    tfs_docs = collections.defaultdict(int, tfs_docs)
+    for doc in tfs_docs.keys():
+        tfs_docs[doc] = len(tfs_docs[doc])
 
     return tfs_docs
 
-def get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2):
+
+def get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2, bool_val):
     """
     Returns term frequencies of a boolean query
 
     :param rel_docs: List of all doc_ids which are relevant for this boolean search (list)
     :param tfs_docs_t1: Term frequencies for term 1 (dict)
     :param tfs_docs_t2: Term frequencies for term 2 (dict)
+    :param bool_val: Either "AND", "AND NOT" or "OR" (str)
     :return: term frequencies which are relevant for this boolean search (dict)
     """
-    tfs_docs = [tfs_docs_t1[doc] + tfs_docs_t2[doc] for doc in rel_docs]
+    if bool_val in ["AND", "AND NOT", "OR"]:
+        tfs_docs = collections.defaultdict(int)
+        for doc in rel_docs:
+            tfs_docs[doc] = tfs_docs_t1[doc] + tfs_docs_t2[doc]
+        return tfs_docs
 
-    return tfs_docs
+    elif bool_val == "OR NOT":
+        # Note that here tfs_docs_t2 includes the documents in which t2 was found. However, we are interested in the
+        # documents in which t2 is not found
+        tfs_docs = collections.defaultdict(int)
+        for doc in rel_docs:
+            tf_doc_t1 = tfs_docs_t1[doc] * 10
+            if doc not in tfs_docs_t2.keys():
+                tf_doc_t2 = 1
+            else: tf_doc_t2 = 0
+            tfs_docs[doc] = tf_doc_t1 + tf_doc_t2
+        return tfs_docs
+
+    else:
+        raise Exception(
+            "bool_val of simple_bool_search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
+                bool_val))
 
 
 def simple_bool_search(rel_docs_t1, rel_docs_t2, indexer, bool_val="AND"):
@@ -182,10 +201,13 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer):
     """
     doc_relevance = {}
     total_num_docs = len(indexer.all_doc_ids)
-    df = len(rel_docs) # document frequency
+    df = len(rel_docs)  # document frequency
 
     # Calculate the weights per document
-    weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
+    if df > 0:
+        weights_docs = [(1 + np.log10(tfs_docs[key])) * np.log10(total_num_docs / df) for key in tfs_docs.keys()]
+    else:
+        weights_docs = []
 
     for doc_id, weight in zip(rel_docs, weights_docs):
         if doc_id not in doc_relevance:
@@ -213,19 +235,19 @@ def execute_search(query, indexer, preprocessor):
     phra_pattern = re.compile('^".*"$')
 
     # check if boolean search
-    if bool_pattern.search(query) != None:
+    if bool_pattern.search(query) is not None:
         type_of_bool_search = bool_pattern.search(query).group(0)
         t1, t2 = query.split(type_of_bool_search)
 
         rel_docs_t1, tfs_docs_t1 = execute_search(t1, indexer, preprocessor)
         rel_docs_t2, tfs_docs_t2 = execute_search(t2, indexer, preprocessor)
         rel_docs = simple_bool_search(rel_docs_t1, rel_docs_t2, indexer=indexer, bool_val=type_of_bool_search.strip())
-        tfs_docs = get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2)
+        tfs_docs = get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2, bool_val=type_of_bool_search.strip())
 
         return rel_docs, tfs_docs
 
     # check if proximity search
-    elif prox_pattern.search(query) != None:
+    elif prox_pattern.search(query) is not None:
         n = int(prox_pattern.search(query).group(0)[1:])
         t1, t2 = [re.sub('[^a-zA-Z]+', '', term) for term in query.split(",")]
 
@@ -239,7 +261,7 @@ def execute_search(query, indexer, preprocessor):
         return rel_docs, tfs_docs
 
     # check if phrase search --> same as proximity search with n = 1
-    elif phra_pattern.search(query) != None:
+    elif phra_pattern.search(query) is not None:
         t1, t2 = re.sub('"', "", query).split()
 
         rel_docs_t1, _ = execute_search(t1, indexer, preprocessor)
@@ -300,14 +322,22 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
             return results
 
     if search_type == "boolean_and_tfidf":
-        # Execute search for boolean queries
-        rel_docs, tfs_docs = execute_search(query, indexer, preprocessor)
+        # Execute search for boolean queries considering ranking
+        boolean_search_pattern = re.compile('(\sAND NOT\s)|(\sOR NOT\s)|(\sAND\s)|(\sOR\s)|(#\d+)|^".*"$')
 
-        rel_docs_with_tfidf = calculate_tfidf(rel_docs, tfs_docs, indexer)
+        # check if boolean search component is in query
+        if boolean_search_pattern.search(query) is not None:
+            rel_docs, tfs_docs = execute_search(query, indexer, preprocessor)
+            rel_docs_with_tfidf = calculate_tfidf(rel_docs, tfs_docs, indexer)
+        else:
+            terms = query.split()
+            terms = [preprocessor.preprocess(term)[0] for term in terms if len(preprocessor.preprocess(term)) > 0]
+            rel_docs_with_tfidf = simple_tfidf_search(terms, indexer)
 
         if len(rel_docs_with_tfidf) > 0:
             if len(rel_docs_with_tfidf) > config["retrieval"]["number_ranked_documents"]:
                 rel_docs = rel_docs[:config["retrieval"]["number_ranked_documents"]]
             for doc_id, value in rel_docs_with_tfidf:
                 results += f"{query_num},{doc_id},{round(value, 4)}\n"
+
             return results
