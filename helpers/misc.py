@@ -27,7 +27,7 @@ def load_queries(filepath):
 
 def create_default_dict_list():
     """
-    Helper function to picke a default dictionary
+    Helper function to pickle a default dictionary
     :return: default dict with list
     """
     return defaultdict(list)

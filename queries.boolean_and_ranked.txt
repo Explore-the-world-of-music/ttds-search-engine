@@ -1,18 +1,3 @@
-1 Hound
-2 Daswirdwohlniegefunden AND Hound
-3 Daswirdwohlniegefunden AND NOT Hound
-4 Daswirdwohlniegefunden OR Hound
-5 Daswirdwohlniegefunden OR NOT Hound
-6 sane
-7 sane AND Hound
-8 sane AND NOT Hound
-9 sane OR Hound
-10 sane OR NOT Hound
-11 coconut
-12 coconut AND Hound
-13 coconut AND NOT Hound
-14 coconut OR Hound
-15 coconut OR NOT Hound
 16 "income taxes"
 17 #20(income, taxes)
 18 "middle east" AND peace
@@ -22,4 +7,3 @@
 22 #15(dow,stocks)
 23 DaswirdwohlniegefundenwerdenHoffentlich OR NOT Happiness
 24 Edinburgh OR NOT Happiness
-25 #1(income, taxes)

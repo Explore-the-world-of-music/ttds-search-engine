@@ -4,12 +4,13 @@ This module runs all the neccessary steps
 
 # Todo: Integrate with frontend and backend. Currently main is used for testing only
 
+import logging
+from datetime import datetime
+
 from ETL.preprocessing import Preprocessor
 from helpers.misc import load_yaml, load_queries
 from search_engine.indexer import Indexer
 from search_engine.retrieval import execute_queries_and_save_results
-from datetime import datetime
-import logging
 
 if __name__ == "__main__":
 
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     indexer.index = indexer.load_index()
 
     # Load boolean queries
-    # # Todo: Embed into final infrastructure
+    # Todo: Embed into final infrastructure
     # queries_num, queries = load_queries('queries.boolean.txt')
     #
     # # Execute Boolean queries for CW1
@@ -54,22 +55,21 @@ if __name__ == "__main__":
     # results = ""
     # for query_num, query in zip(queries_num, queries):
     #     results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean", indexer=indexer,
-    #                                                 preprocessor=preprocessor, config=config)
+    #                                                    preprocessor=preprocessor, config=config)
     #     if results_tmp is not None:
     #         results = results + results_tmp
     #
     # with open("data/results/Boolean_" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
     #     f.writelines(results[:-1])
     #
-    #
-    # Load ranked queries
+    # # Load ranked queries
     # queries_num, queries = load_queries('queries.ranked.txt')
     #
     # # Execute Ranked queries for CW1
     # results = ""
     # for query_num, query in zip(queries_num, queries):
     #     results_tmp = execute_queries_and_save_results(query_num, query, search_type="tfidf", indexer=indexer,
-    #                                                preprocessor=preprocessor, config=config)
+    #                                                    preprocessor=preprocessor, config=config)
     #     if results_tmp is not None:
     #         results = results + results_tmp
     # with open("data/results/Ranked_" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
