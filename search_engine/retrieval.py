@@ -15,9 +15,9 @@ def find_docs_with_term(term, index):
     :param index: Index in which to search (dict)
     :return: list of relevant doc ids (list)
     """
-    try:
+    if term in index.keys():
         rel_doc_ids = list(index[term].keys())
-    except:
+    else:
         rel_doc_ids = []
 
     return rel_doc_ids
@@ -31,8 +31,12 @@ def get_rel_doc_pos(term, index):
     :param index: Index in which to search (dict)
     :return: positions of term for related doc ids (list of lists)
     """
-    docs_info = index[term]
-    return [docs_info[doc] for doc in docs_info.keys()]
+    if term in index.keys():
+        rel_doc_pos = index[term]
+    else:
+        rel_doc_pos = dict()
+
+    return rel_doc_pos
 
 
 def get_tfs_docs(term, index):
@@ -51,53 +55,17 @@ def get_tfs_docs(term, index):
     return tfs_docs
 
 
-def get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2, bool_val):
+def get_tfs_docs_bool_search(rel_docs, search_results, bool_vals):
     """
     Returns term frequencies of a boolean query
 
     :param rel_docs: List of all doc_ids which are relevant for this boolean search (list)
-    :param tfs_docs_t1: Term frequencies for term 1 (dict)
-    :param tfs_docs_t2: Term frequencies for term 2 (dict)
-    :param bool_val: Either "AND", "AND NOT" or "OR" (str)
-    :return: term frequencies which are relevant for this boolean search (dict)
-    """
-    if bool_val in ["AND", "AND NOT", "OR"]:
-        tfs_docs = defaultdict(int)
-        for doc in rel_docs:
-            tfs_docs[doc] = tfs_docs_t1[doc] + tfs_docs_t2[doc]
-        return tfs_docs
-
-    elif bool_val == "OR NOT":
-        # Note that here tfs_docs_t2 includes the documents in which t2 was found. However, we are interested in the
-        # documents in which t2 is not found
-        tfs_docs = defaultdict(int)
-        for doc in rel_docs:
-            tf_doc_t1 = tfs_docs_t1[doc] * 100
-            if doc not in tfs_docs_t2.keys():
-                tf_doc_t2 = 1
-            else:
-                tf_doc_t2 = 0
-            tfs_docs[doc] = tf_doc_t1 + tf_doc_t2
-        return tfs_docs
-
-    else:
-        raise Exception(
-            "bool_val of simple_bool_search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
-                bool_val))
-
-
-def get_tfs_docs_bool_search_V2(rel_docs, search_results, bool_vals):
-    """
-    Returns term frequencies of a boolean query
-
-    :param rel_docs: List of all doc_ids which are relevant for this boolean search (list)
-    :param tfs_docs_t1: Term frequencies for term 1 (dict)
-    :param tfs_docs_t2: Term frequencies for term 2 (dict)
-    :param bool_val: Either "AND", "AND NOT" or "OR" (str)
+    :param search_results: Results of document and tfs for each individual search term (dict)
+    :param bool_vals: List of "AND", "AND NOT" or "OR" (list)
     :return: term frequencies which are relevant for this boolean search (dict)
     """
     terms = list(search_results.keys())
-    tfs_docs = defaultdict(int)
+    # Extract tfs for the first term as basis for summation
     tfs_docs = search_results[terms[0]]["tfs_docs"].copy()
 
     for idx, bool_val in enumerate(bool_vals):
@@ -106,10 +74,12 @@ def get_tfs_docs_bool_search_V2(rel_docs, search_results, bool_vals):
             for doc in rel_docs:
                 tfs_docs[doc] = tfs_docs[doc] + search_results[terms[idx + 1]]["tfs_docs"][doc]
         elif bool_val == "OR NOT":
-            # Note that here tfs_docs_t2 includes the documents in which t2 was found. However, we are interested in the
-            # documents in which t2 is not found
+            # Note that here the additional term includes the documents in which the term was found.
+            # However, we are interested in the documents in which t2 is not found, hence we add
+            # "1" to the tf if it was not found. To increase the weight of true positives (terms that we wanted
+            # were also found), we increase their weight by a factor set in the config file
             for doc in rel_docs:
-                tfs_docs[doc] = tfs_docs[doc] * 100
+                tfs_docs[doc] = tfs_docs[doc] * 100  # Todo: Use config setting here when class is created
                 if doc not in search_results[terms[idx + 1]]["tfs_docs"].keys():
                     tf_doc_t_new = 1
                 else:
@@ -117,56 +87,26 @@ def get_tfs_docs_bool_search_V2(rel_docs, search_results, bool_vals):
                 tfs_docs[doc] = tfs_docs[doc] + tf_doc_t_new
         else:
             raise Exception(
-                "bool_val of simple_bool_search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
-                    bool_val))
+                "bool_val of search doesn't match list of either 'AND', 'AND NOT', 'OR' or "
+                "'OR NOT'. It is: {}.".format(bool_val))
 
     return tfs_docs
 
 
-def simple_bool_search(rel_docs_t1, rel_docs_t2, indexer, bool_val="AND"):
+def bool_search(search_results, indexer, bool_vals):
     """
-    Executes a simple boolean search between two lists of relevant docs.
+    Executes a boolean search between relevant documents for all searched terms.
 
-    :param rel_docs_t1: Relevant doc_ids of term 1 (list)
-    :param rel_docs_t2: Relevant doc_ids of term 2 (list)
+    :param search_results: Results of document and tfs for each individual search term (dict)
     :param indexer: Class instance for the created index (Indexer)
-    :param bool_val: Either "AND", "AND NOT" or "OR" (str)
-    :return: List of all doc_ids which are relevant for this boolean search (list)
-    """
-    if bool_val == "AND":
-        return [doc_id for doc_id in rel_docs_t1 if doc_id in rel_docs_t2]
-
-    elif bool_val == "AND NOT":
-        return [doc_id for doc_id in rel_docs_t1 if doc_id not in rel_docs_t2]
-
-    elif bool_val == "OR":
-        return list(set(rel_docs_t1 + rel_docs_t2))
-
-    elif bool_val == "OR NOT":
-        return list(
-            set([doc_id for doc_id in indexer.all_doc_ids if doc_id not in rel_docs_t2] + rel_docs_t1))
-
-    else:
-        raise Exception(
-            "bool_val of simple_bool_search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
-                bool_val))
-
-
-def simple_bool_search_V2(search_results, indexer, bool_vals):
-    """
-    Executes a simple boolean search between two lists of relevant docs.
-
-    :param rel_docs_t1: Relevant doc_ids of term 1 (list)
-    :param rel_docs_t2: Relevant doc_ids of term 2 (list)
-    :param indexer: Class instance for the created index (Indexer)
-    :param bool_val: Either "AND", "AND NOT" or "OR" (str)
+    :param bool_vals: List of "AND", "AND NOT" or "OR" (list)
     :return: List of all doc_ids which are relevant for this boolean search (list)
     """
     terms = list(search_results.keys())
-    rel_docs = search_results[terms[0]]["rel_docs"]
+    # Extract relevant documents for the first term as basis for boolean analysis
+    rel_docs = search_results[terms[0]]["rel_docs"].copy()
 
     for idx, bool_val in enumerate(bool_vals):
-
         if bool_val == "AND":
             rel_docs = [doc_id for doc_id in rel_docs if doc_id in search_results[terms[idx + 1]]["rel_docs"]]
 
@@ -182,69 +122,18 @@ def simple_bool_search_V2(search_results, indexer, bool_vals):
 
         else:
             raise Exception(
-                "bool_val of simple_bool_search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
+                "bool_val of search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
                     bool_val))
 
     return rel_docs
 
 
-def simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2, indexer, n=1, phrase=False):
+def simple_proximity_search(search_results, indexer, n=1, phrase=False):
     """
-    Calculates if term1 and term2 are in the same document with less or equal to n distance and return relevant doc_ids.
+    Calculates if terms in query are in the same document with less or equal to n distance and return relevant doc_ids.
     Option to perform phrase search.
 
-    :param rel_docs_t1: Relevant doc_ids of term 1 (list)
-    :param rel_doc_pos_t1: Relevant positions, referring to the doc_ids of term 1 (list of lists)
-    :param rel_docs_t2: Relevant doc_ids of term 2 (list)
-    :param rel_doc_pos_t2: Relevant positions, referring to the doc_ids of term 2 (list of lists)
-    :param indexer: Class instance for the created index (Indexer)
-    :param n: allowed distance in one document (int)
-    :param phrase: whether or not the search is a phrase search and ordering matters (bool)
-    :return: List of all doc_ids which are relevant for proximity search (list)
-    """
-    # Performs a boolean search to get documents which contain both terms
-    rel_documents_both_terms = simple_bool_search(rel_docs_t1, rel_docs_t2, indexer=indexer, bool_val="AND")
-
-    # Create boolean masks to match extract the relevant doc_pos parts
-    bool_mask_t1 = [True if doc in rel_documents_both_terms else False for doc in rel_docs_t1]
-    bool_mask_t2 = [True if doc in rel_documents_both_terms else False for doc in rel_docs_t2]
-
-    rel_doc_pos_t1 = [pos for pos, boolean in zip(rel_doc_pos_t1, bool_mask_t1) if boolean]
-    rel_doc_pos_t2 = [pos for pos, boolean in zip(rel_doc_pos_t2, bool_mask_t2) if boolean]
-
-    # For each document id
-    # if any(|pos_1 - pos_2|<= n) --> doc_id is relevant --> append it to returned final_rel_doc_ids list
-    final_rel_doc_ids = []
-    for idx, doc_id in enumerate(rel_documents_both_terms):
-
-        for pos_1 in rel_doc_pos_t1[idx]:
-
-            for pos_2 in rel_doc_pos_t2[idx]:
-                if phrase:
-                    if int(pos_2) - int(pos_1) == 1:
-                        final_rel_doc_ids.append(doc_id)
-                        break
-
-                else:
-                    if abs(int(pos_1) - int(pos_2)) <= n:
-                        final_rel_doc_ids.append(doc_id)
-                        break
-
-    tfs_docs = dict(Counter(final_rel_doc_ids))
-    final_rel_doc_ids = sorted(list(set(final_rel_doc_ids)))
-
-    return final_rel_doc_ids, tfs_docs
-
-
-def simple_proximity_search_V2(search_results, indexer, n=1, phrase=False):
-    """
-    Calculates if term1 and term2 are in the same document with less or equal to n distance and return relevant doc_ids.
-    Option to perform phrase search.
-
-    :param rel_docs_t1: Relevant doc_ids of term 1 (list)
-    :param rel_doc_pos_t1: Relevant positions, referring to the doc_ids of term 1 (list of lists)
-    :param rel_docs_t2: Relevant doc_ids of term 2 (list)
-    :param rel_doc_pos_t2: Relevant positions, referring to the doc_ids of term 2 (list of lists)
+    :param search_results: Results of document and tfs for each individual search term (dict)
     :param indexer: Class instance for the created index (Indexer)
     :param n: allowed distance in one document (int)
     :param phrase: whether or not the search is a phrase search and ordering matters (bool)
@@ -252,8 +141,7 @@ def simple_proximity_search_V2(search_results, indexer, n=1, phrase=False):
     """
     # Performs a boolean search to get documents which contain both terms
     terms = list(search_results.keys())
-    rel_documents_all_terms = simple_bool_search_V2(search_results, indexer=indexer,
-                                                    bool_vals=["AND"] * (len(terms) - 1))
+    rel_documents_all_terms = bool_search(search_results, indexer=indexer, bool_vals=["AND"] * (len(terms) - 1))
 
     # For each document id
     # if any(|pos_1 - pos_2|<= n) --> doc_id is relevant --> append it to returned final_rel_doc_ids list
@@ -297,7 +185,8 @@ def simple_tfidf_search(terms, indexer):
     for t in terms:
         rel_docs = find_docs_with_term(t, indexer.index)
         df = len(rel_docs)
-        tfs_docs = [len(doc) for doc in get_rel_doc_pos(t, indexer.index)]
+        rel_doc_pos = get_rel_doc_pos(t, indexer.index)
+        tfs_docs = [len(rel_doc_pos[key]) for key in rel_doc_pos]
         weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
 
         for doc_id, weight in zip(rel_docs, weights_docs):
@@ -326,7 +215,7 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer):
 
     # Calculate the weights per document
     if df > 0:
-        # Please note that the factor 0.000001 was added to differentiate documents in ranking even if
+        # Please note that the calculation was adjusted to differentiate documents in ranking even if
         # all documents of the collection are part of the relevant documents
         if total_num_docs == df:
             weights_docs = [(1 + np.log10(tfs_docs[key])) * 1 for key in rel_docs]
@@ -348,14 +237,14 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer):
 def execute_search(query, indexer, preprocessor):
     """
     Checks, which type of search has to be done.
-    Executes the search and returns the resulting, relevant doc_ids
+    Executes the search and returns the resulting, relevant doc_ids and tfs for those
 
     :param query: The query which should be searched for (str)
     :param indexer: Class instance for the created index (Indexer)
     :param preprocessor: Preprocessor class instance (Preprocessor)
-    :return: List from the matching function containing all relevant doc_ids
+    :return: List from the matching function containing all relevant doc_ids, List of all tfs for relevant doc_ids
     """
-    # compile test patterns
+    # compile search patterns to test for
     bool_pattern = re.compile("(\sAND NOT\s)|(\sOR NOT\s)|(\sAND\s)|(\sOR\s)")
     prox_pattern = re.compile("#\d+")
     phra_pattern = re.compile('^".*"$')
@@ -380,16 +269,8 @@ def execute_search(query, indexer, preprocessor):
             search_results[term]["rel_docs"], search_results[term]["tfs_docs"] = execute_search(term, indexer,
                                                                                                 preprocessor)
 
-        rel_docs = simple_bool_search_V2(search_results, indexer=indexer, bool_vals=type_of_bool_search)
-        tfs_docs = get_tfs_docs_bool_search_V2(rel_docs, search_results, bool_vals=type_of_bool_search)
-
-        # type_of_bool_search = bool_pattern.search(query).group(0)
-        # t1, t2 = query.split(type_of_bool_search)
-        #
-        # rel_docs_t1, tfs_docs_t1 = execute_search(t1, indexer, preprocessor)
-        # rel_docs_t2, tfs_docs_t2 = execute_search(t2, indexer, preprocessor)
-        # rel_docs = simple_bool_search(rel_docs_t1, rel_docs_t2, indexer=indexer, bool_val=type_of_bool_search.strip())
-        # tfs_docs = get_tfs_docs_bool_search(rel_docs, tfs_docs_t1, tfs_docs_t2, bool_val=type_of_bool_search.strip())
+        rel_docs = bool_search(search_results, indexer=indexer, bool_vals=type_of_bool_search)
+        tfs_docs = get_tfs_docs_bool_search(rel_docs, search_results, bool_vals=type_of_bool_search)
 
         return rel_docs, tfs_docs
 
@@ -401,20 +282,9 @@ def execute_search(query, indexer, preprocessor):
         search_results = defaultdict(create_default_dict_list)
         for term in terms:
             search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
-            # Todo: Implement that in function and clean other functions
-            search_results[term]["rel_doc_pos"] = indexer.index[preprocessor.preprocess(term)[0]]
+            search_results[term]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
 
-        rel_docs, tfs_docs = simple_proximity_search_V2(search_results, indexer=indexer, n=n)
-
-        # t1, t2 = [re.sub('[^a-zA-Z]+', '', term) for term in query.split(",")]
-        #
-        # rel_docs_t1, _ = execute_search(t1, indexer, preprocessor)
-        # rel_docs_t2, _ = execute_search(t2, indexer, preprocessor)
-        # rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], indexer.index)
-        # rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], indexer.index)
-        #
-        # rel_docs, tfs_docs = simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2, rel_doc_pos_t2,
-        #                                              indexer=indexer, n=n)
+        rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=n)
 
         return rel_docs, tfs_docs
 
@@ -425,20 +295,10 @@ def execute_search(query, indexer, preprocessor):
         search_results = defaultdict(create_default_dict_list)
         for term in terms:
             search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
-            # Todo: Implement that in function and clean other functions
-            search_results[term]["rel_doc_pos"] = indexer.index[preprocessor.preprocess(term)[0]]
+            search_results[term]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
 
-        rel_docs, tfs_docs = simple_proximity_search_V2(search_results, indexer=indexer, n=1, phrase=True)
+        rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=1, phrase=True)
 
-        # t1, t2 = re.sub('"', "", query).split()
-        #
-        # rel_docs_t1, _ = execute_search(t1, indexer, preprocessor)
-        # rel_docs_t2, _ = execute_search(t2, indexer, preprocessor)
-        # rel_doc_pos_t1 = get_rel_doc_pos(preprocessor.preprocess(t1)[0], indexer.index)
-        # rel_doc_pos_t2 = get_rel_doc_pos(preprocessor.preprocess(t2)[0], indexer.index)
-        #
-        # rel_docs, tfs_docs = simple_proximity_search(rel_docs_t1, rel_doc_pos_t1, rel_docs_t2,
-        #                                              rel_doc_pos_t2, indexer=indexer, n=1, phrase=True)
         return rel_docs, tfs_docs
 
     # if nothing else matches --> make a simple search
