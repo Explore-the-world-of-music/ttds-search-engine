@@ -143,6 +143,7 @@ def simple_proximity_search(search_results, indexer, n=1, phrase=False):
     terms = list(search_results.keys())
     rel_documents_all_terms = bool_search(search_results, indexer=indexer, bool_vals=["AND"] * (len(terms) - 1))
 
+    # Todo: Think about if proximity search considers the max distance between first and last
     # For each document id
     # if any(|pos_1 - pos_2|<= n) --> doc_id is relevant --> append it to returned final_rel_doc_ids list
     final_rel_doc_ids = list()

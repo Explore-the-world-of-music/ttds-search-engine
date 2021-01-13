@@ -1,0 +1,6 @@
+1 Hound AND Coconut
+2 Hound AND Coconut AND coconut
+3 Hound AND Coconut AND Catholic
+4 "Glasgow Income Trust"
+5 #5(hound,coconut, catholic)
+6 #2000(hound,coconut, catholic)
