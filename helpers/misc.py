@@ -20,7 +20,7 @@ def load_yaml(yaml_file_path):
 def load_queries(filepath):
     with open(filepath, mode="r", encoding="utf-8") as f:
         queries = f.readlines()
-    queries = [query[:-1].split() for query in queries]
+    queries = [query.split() for query in queries]
     query_num = [query[0] for query in queries]
     query = [" ".join(query[1:]) for query in queries]
     return query_num, query

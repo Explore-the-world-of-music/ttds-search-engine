@@ -5,6 +5,7 @@ from collections import defaultdict, Counter
 import re
 from helpers.misc import create_default_dict_list
 import numpy as np
+from operator import itemgetter
 
 
 def find_docs_with_term(term, index):
@@ -76,10 +77,8 @@ def get_tfs_docs_bool_search(rel_docs, search_results, bool_vals):
         elif bool_val == "OR NOT":
             # Note that here the additional term includes the documents in which the term was found.
             # However, we are interested in the documents in which t2 is not found, hence we add
-            # "1" to the tf if it was not found. To increase the weight of true positives (terms that we wanted
-            # were also found), we increase their weight by a factor set in the config file
+            # "1" to the tf if it was not found.
             for doc in rel_docs:
-                tfs_docs[doc] = tfs_docs[doc] * 100  # Todo: Use config setting here when class is created
                 if doc not in search_results[terms[idx + 1]]["tfs_docs"].keys():
                     tf_doc_t_new = 1
                 else:
@@ -128,7 +127,7 @@ def bool_search(search_results, indexer, bool_vals):
     return rel_docs
 
 
-def simple_proximity_search(search_results, indexer, n=1, phrase=False):
+def simple_proximity_search(search_results, indexer, n=1, phrase=False, pos_asterisk = None):
     """
     Calculates if terms in query are in the same document with less or equal to n distance and return relevant doc_ids.
     Option to perform phrase search.
@@ -144,29 +143,43 @@ def simple_proximity_search(search_results, indexer, n=1, phrase=False):
     rel_documents_all_terms = bool_search(search_results, indexer=indexer, bool_vals=["AND"] * (len(terms) - 1))
 
     # Todo: Think about if proximity search considers the max distance between first and last
-    # For each document id
     # if any(|pos_1 - pos_2|<= n) --> doc_id is relevant --> append it to returned final_rel_doc_ids list
+    # Find potential candidates (differentiation important for multiple words in phrase/proximity search)
     final_rel_doc_ids = list()
-    relevance_indicator = [0] * (len(terms) - 1)
     for doc_id in rel_documents_all_terms:
+        dict_candi = defaultdict(list)
         for idx, term in enumerate(terms[:-1]):
             for pos_1 in search_results[terms[idx]]["rel_doc_pos"][doc_id]:
                 for pos_2 in search_results[terms[idx+1]]["rel_doc_pos"][doc_id]:
                     if phrase:
-                        if int(pos_2) - int(pos_1) == 1:
-                            relevance_indicator[idx] = 1
-                        else:
-                            relevance_indicator[idx] = 0
+                        diff = 1
+                        if int(pos_2) - int(pos_1) == diff:
+                            dict_candi[idx].append((pos_1, pos_2))
                     else:
                         if abs(int(pos_1) - int(pos_2)) <= n:
-                            relevance_indicator[idx] = 1
-                        else:
-                            relevance_indicator[idx] = 0
+                            dict_candi[idx].append((pos_1, pos_2))
 
-                    if sum(relevance_indicator) == len(terms)-1:
-                        final_rel_doc_ids.append(doc_id)
+        # Check if found candidates are actual true positives
+        if len(dict_candi.keys()) <= 1:
+            # If only two terms were compared, take all results
+            for item in dict_candi[0]:
+                final_rel_doc_ids.append(doc_id)
+        else:
+            # For multiple terms delete all positions which are true across terms
+            # Finally take the minimum true positions per term as the number for which the whole
+            # phrase or proximity was found in the document
+            for idx in np.arange(len(terms[:-1])-1):
+                for idx2, candi_1 in enumerate(dict_candi[idx]):
+                    candi_2 = [pos[0] for pos in dict_candi[idx+1]]
+                    if candi_1[1] not in candi_2:
+                        del dict_candi[idx][idx2]
+            max_cand = min([len(dict_candi[key]) for key in dict_candi.keys()])
+            for i in np.arange(max_cand):
+                final_rel_doc_ids.append(doc_id)
 
+    # Convert results to appropriate output format
     tfs_docs = dict(Counter(final_rel_doc_ids))
+    tfs_docs = defaultdict(int, tfs_docs)
     final_rel_doc_ids = sorted(list(set(final_rel_doc_ids)))
 
     return final_rel_doc_ids, tfs_docs
@@ -232,6 +245,7 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer):
             doc_relevance[doc_id] += weight
 
     sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
+
     return sorted_relevance
 
 
@@ -293,12 +307,19 @@ def execute_search(query, indexer, preprocessor):
     elif phra_pattern.search(query) is not None:
         terms = re.sub('"', "", query).split()
 
+        # Check if asterisk is in query
+        if "*" in terms:
+            pos_asterisk = [idx for idx, s in enumerate(terms) if "*" == s]
+            terms = [term for term in terms if term != "*"]
+        else:
+            pos_asterisk = None
+
         search_results = defaultdict(create_default_dict_list)
         for term in terms:
             search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
             search_results[term]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
 
-        rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=1, phrase=True)
+        rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=1, phrase=True, pos_asterisk = pos_asterisk)
 
         return rel_docs, tfs_docs
 
@@ -364,9 +385,19 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
             rel_docs_with_tfidf = simple_tfidf_search(terms, indexer)
 
         if len(rel_docs_with_tfidf) > 0:
+            # Only keep top results
             if len(rel_docs_with_tfidf) > config["retrieval"]["number_ranked_documents"]:
                 rel_docs_with_tfidf = rel_docs_with_tfidf[:config["retrieval"]["number_ranked_documents"]]
-            for doc_id, value in rel_docs_with_tfidf:
+
+            # Rescale the results. For queries with "OR NOT" it can happen that the difference in scores between the
+            # documents are very low (0.0001). To interpret results easier we re-scale here based on the highest score
+            max_value = max(rel_docs_with_tfidf, key=itemgetter(1))[1]
+            rel_docs_with_tfidf_scaled = list()
+            for idx, _ in enumerate(rel_docs_with_tfidf):
+                rel_docs_with_tfidf_scaled.append((rel_docs_with_tfidf[idx][0], rel_docs_with_tfidf[idx][1] / max_value * 10))
+
+            # Write output
+            for doc_id, value in rel_docs_with_tfidf_scaled:
                 results += f"{query_num},{doc_id},{round(value, 4)}\n"
 
             return results

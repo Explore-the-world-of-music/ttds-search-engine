@@ -23,12 +23,17 @@ Recommendation engine (different interface than search engine or next step after
 -	Topic search for a user to get new inspiration about songs he/she might like
 
 
+
+
+
+<ins>IMPLEMENTATION NOTES</ins>
+
 <ins>How to combine Boolean and ranked search?</ins>
 
 For ranked queries each term in the query is checked for its (relative) frequency. For the different Boolean operators this is interpreted as follows:
 
 -	AND: Count how often each term occurs only in the relevant documents.
--	AND NOT: Count how often t1 occurs only in the relevant documents. The occurences for t2 are 0 for all relevant documents (as given by Boolean search)
+-	AND NOT: Count how often t1 occurs only in the relevant documents. The occurrences for t2 are 0 for all relevant documents (as given by Boolean search)
 -	OR: Count how often each term occurs only in the relevant documents
 -	OR NOT: Count how often t1 occurs only in the relevant documents and multiply by 100, if t2 is not in the document “+1” is added
 -	Phrase: How often is phrase in relevant documents
