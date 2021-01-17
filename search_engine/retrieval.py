@@ -127,7 +127,7 @@ def bool_search(search_results, indexer, bool_vals):
     return rel_docs
 
 
-def simple_proximity_search(search_results, indexer, n=1, phrase=False, pos_asterisk = None):
+def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phrase=False):
     """
     Calculates if terms in query are in the same document with less or equal to n distance and return relevant doc_ids.
     Option to perform phrase search.
@@ -135,6 +135,7 @@ def simple_proximity_search(search_results, indexer, n=1, phrase=False, pos_aste
     :param search_results: Results of document and tfs for each individual search term (dict)
     :param indexer: Class instance for the created index (Indexer)
     :param n: allowed distance in one document (int)
+    :param pos_asterisk: positions where the asterisks are located (list)
     :param phrase: whether or not the search is a phrase search and ordering matters (bool)
     :return: List of all doc_ids which are relevant for proximity search (list)
     """
@@ -153,6 +154,9 @@ def simple_proximity_search(search_results, indexer, n=1, phrase=False, pos_aste
                 for pos_2 in search_results[terms[idx+1]]["rel_doc_pos"][doc_id]:
                     if phrase:
                         diff = 1
+                        if pos_asterisk is not None:
+                            if (idx + 1) in pos_asterisk:
+                                diff = 1 + len([num for num in pos_asterisk if num == idx + 1])
                         if int(pos_2) - int(pos_1) == diff:
                             dict_candi[idx].append((pos_1, pos_2))
                     else:
@@ -160,7 +164,7 @@ def simple_proximity_search(search_results, indexer, n=1, phrase=False, pos_aste
                             dict_candi[idx].append((pos_1, pos_2))
 
         # Check if found candidates are actual true positives
-        if len(dict_candi.keys()) <= 1:
+        if len(terms) <= 2:
             # If only two terms were compared, take all results
             for item in dict_candi[0]:
                 final_rel_doc_ids.append(doc_id)
@@ -309,7 +313,17 @@ def execute_search(query, indexer, preprocessor):
 
         # Check if asterisk is in query
         if "*" in terms:
-            pos_asterisk = [idx for idx, s in enumerate(terms) if "*" == s]
+            pos_asterisk = list()
+            for idx, term in enumerate(terms):
+                if term == "*":
+                        if len(pos_asterisk) > 0:
+                            if pos_asterisk[-1] == (idx -1):
+                                pos_asterisk.append(idx - 1)
+                            else:
+                                pos_asterisk.append(idx - len(pos_asterisk))
+                        else:
+                            pos_asterisk.append(idx - len(pos_asterisk))
+
             terms = [term for term in terms if term != "*"]
         else:
             pos_asterisk = None
