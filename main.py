@@ -46,59 +46,59 @@ if __name__ == "__main__":
 
     # # Load boolean queries
     # # Todo: Embed into final infrastructure
-    # queries_num, queries = load_queries('queries/queries.boolean.txt')
-    #
-    # # # Execute Boolean queries for CW1
-    # # # Todo: Create class for retrieval
-    # results = ""
-    # for query_num, query in zip(queries_num, queries):
-    #     results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean", indexer=indexer,
-    #                                                    preprocessor=preprocessor, config=config)
-    #     if results_tmp is not None:
-    #         results = results + results_tmp
-    #
-    # with open("data/results/Boolean_" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
-    #     f.writelines(results[:-1])
-    #
-    # # Load ranked queries
-    # queries_num, queries = load_queries('queries/queries.ranked.txt')
-    #
-    # # Execute Ranked queries for CW1
-    # results = ""
-    # for query_num, query in zip(queries_num, queries):
-    #     results_tmp = execute_queries_and_save_results(query_num, query, search_type="tfidf", indexer=indexer,
-    #                                                    preprocessor=preprocessor, config=config)
-    #     if results_tmp is not None:
-    #         results = results + results_tmp
-    # with open("data/results/Ranked_" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
-    #     f.writelines(results[:-1])
+    queries_num, queries = load_queries('queries/queries.boolean.txt')
+
+    # # Execute Boolean queries for CW1
+    # # Todo: Create class for retrieval
+    results = ""
+    for query_num, query in zip(queries_num, queries):
+        results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean", indexer=indexer,
+                                                       preprocessor=preprocessor, config=config)
+        if results_tmp is not None:
+            results = results + results_tmp
+
+    with open("data/results/Boolean_" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
+        f.writelines(results[:-1])
+
+    # Load ranked queries
+    queries_num, queries = load_queries('queries/queries.ranked.txt')
+
+    # Execute Ranked queries for CW1
+    results = ""
+    for query_num, query in zip(queries_num, queries):
+        results_tmp = execute_queries_and_save_results(query_num, query, search_type="tfidf", indexer=indexer,
+                                                       preprocessor=preprocessor, config=config)
+        if results_tmp is not None:
+            results = results + results_tmp
+    with open("data/results/Ranked_" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
+        f.writelines(results[:-1])
+
+    # Load boolean + ranked queries
+    queries_num, queries = load_queries('queries/queries.boolean_and_ranked.txt')
+
+    # Execute Boolean Ranked queries
+    results = ""
+    for query_num, query in zip(queries_num, queries):
+        results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean_and_tfidf", indexer=indexer,
+                                                       preprocessor=preprocessor, config=config)
+        if results_tmp is not None:
+            results = results + results_tmp
+    with open("data/results/Ranked_AND_Boolean" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
+        f.writelines(results[:-1])
     #
     # # Load boolean + ranked queries
-    # queries_num, queries = load_queries('queries/queries.boolean_and_ranked.txt')
-    #
-    # # Execute Boolean Ranked queries
-    # results = ""
-    # for query_num, query in zip(queries_num, queries):
-    #     results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean_and_tfidf", indexer=indexer,
-    #                                                    preprocessor=preprocessor, config=config)
-    #     if results_tmp is not None:
-    #         results = results + results_tmp
-    # with open("data/results/Ranked_AND_Boolean" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
-    #     f.writelines(results[:-1])
-    # #
-    # # # Load boolean + ranked queries
-    # queries_num, queries = load_queries('queries/queries.multiple_boolean_and_ranked.txt')
-    #
-    # # Execute Multiple Boolean Ranked queries
-    # results = ""
-    # for query_num, query in zip(queries_num, queries):
-    #     results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean_and_tfidf",
-    #                                                    indexer=indexer,
-    #                                                    preprocessor=preprocessor, config=config)
-    #     if results_tmp is not None:
-    #         results = results + results_tmp
-    # with open("data/results/Multiple_Ranked_AND_Boolean" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
-    #     f.writelines(results[:-1])
+    queries_num, queries = load_queries('queries/queries.multiple_boolean_and_ranked.txt')
+
+    # Execute Multiple Boolean Ranked queries
+    results = ""
+    for query_num, query in zip(queries_num, queries):
+        results_tmp = execute_queries_and_save_results(query_num, query, search_type="boolean_and_tfidf",
+                                                       indexer=indexer,
+                                                       preprocessor=preprocessor, config=config)
+        if results_tmp is not None:
+            results = results + results_tmp
+    with open("data/results/Multiple_Ranked_AND_Boolean" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
+        f.writelines(results[:-1])
 
     # Load boolean + ranked queries
     queries_num, queries = load_queries('queries/queries.asterixForMissingWord.txt')

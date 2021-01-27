@@ -80,7 +80,7 @@ def get_tfs_docs_bool_search(rel_docs, search_results, bool_vals):
             # "1" to the tf if it was not found.
             for doc in rel_docs:
                 if doc not in search_results[terms[idx + 1]]["tfs_docs"].keys():
-                    tf_doc_t_new = 1
+                    tf_doc_t_new = 0.5
                 else:
                     tf_doc_t_new = 0
                 tfs_docs[doc] = tfs_docs[doc] + tf_doc_t_new
