@@ -62,7 +62,7 @@ def get_tfs_docs_bool_search(rel_docs, search_results, bool_vals):
 
     :param rel_docs: List of all doc_ids which are relevant for this boolean search (list)
     :param search_results: Results of document and tfs for each individual search term (dict)
-    :param bool_vals: List of "AND", "AND NOT" or "OR" (list)
+    :param bool_vals: List of "&&", "&&--" or "||" or "||--" (list)
     :return: term frequencies which are relevant for this boolean search (dict)
     """
     terms = list(search_results.keys())
@@ -71,10 +71,10 @@ def get_tfs_docs_bool_search(rel_docs, search_results, bool_vals):
 
     for idx, bool_val in enumerate(bool_vals):
 
-        if bool_val in ["AND", "AND NOT", "OR"]:
+        if bool_val in ["&&", "&&--", "||"]:
             for doc in rel_docs:
                 tfs_docs[doc] = tfs_docs[doc] + search_results[terms[idx + 1]]["tfs_docs"][doc]
-        elif bool_val == "OR NOT":
+        elif bool_val == "||--":
             # Note that here the additional term includes the documents in which the term was found.
             # However, we are interested in the documents in which t2 is not found, hence we add
             # "1" to the tf if it was not found.
@@ -86,8 +86,7 @@ def get_tfs_docs_bool_search(rel_docs, search_results, bool_vals):
                 tfs_docs[doc] = tfs_docs[doc] + tf_doc_t_new
         else:
             raise Exception(
-                "bool_val of search doesn't match list of either 'AND', 'AND NOT', 'OR' or "
-                "'OR NOT'. It is: {}.".format(bool_val))
+                "bool_val of search doesn't match either '&&', '&&--', '||' or '||--'. It is: {}.".format(bool_val))
 
     return tfs_docs
 
@@ -98,7 +97,7 @@ def bool_search(search_results, indexer, bool_vals):
 
     :param search_results: Results of document and tfs for each individual search term (dict)
     :param indexer: Class instance for the created index (Indexer)
-    :param bool_vals: List of "AND", "AND NOT" or "OR" (list)
+    :param bool_vals: List of "&&", "&&--" or "||" or "||--" (list)
     :return: List of all doc_ids which are relevant for this boolean search (list)
     """
     terms = list(search_results.keys())
@@ -106,22 +105,22 @@ def bool_search(search_results, indexer, bool_vals):
     rel_docs = search_results[terms[0]]["rel_docs"].copy()
 
     for idx, bool_val in enumerate(bool_vals):
-        if bool_val == "AND":
+        if bool_val == "&&":
             rel_docs = [doc_id for doc_id in rel_docs if doc_id in search_results[terms[idx + 1]]["rel_docs"]]
 
-        elif bool_val == "AND NOT":
+        elif bool_val == "&&--":
             rel_docs = [doc_id for doc_id in rel_docs if doc_id not in search_results[terms[idx + 1]]["rel_docs"]]
 
-        elif bool_val == "OR":
+        elif bool_val == "||":
             rel_docs = list(set(rel_docs + search_results[terms[idx + 1]]["rel_docs"]))
 
-        elif bool_val == "OR NOT":
+        elif bool_val == "||--":
             rel_docs = list(set([doc_id for doc_id in indexer.all_doc_ids if doc_id not in
                                  search_results[terms[idx + 1]]["rel_docs"]] + rel_docs))
 
         else:
             raise Exception(
-                "bool_val of search doesn't match either 'AND', 'AND NOT', 'OR' or 'OR NOT'. It is: {}.".format(
+                "bool_val of search doesn't match either '&&', '&&--', '||' or '||--'. It is: {}.".format(
                     bool_val))
 
     return rel_docs
@@ -141,7 +140,7 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
     """
     # Performs a boolean search to get documents which contain both terms
     terms = list(search_results.keys())
-    rel_documents_all_terms = bool_search(search_results, indexer=indexer, bool_vals=["AND"] * (len(terms) - 1))
+    rel_documents_all_terms = bool_search(search_results, indexer=indexer, bool_vals=["&&"] * (len(terms) - 1))
 
     # Todo: Think about if proximity search considers the max distance between first and last
     # if any(|pos_1 - pos_2|<= n) --> doc_id is relevant --> append it to returned final_rel_doc_ids list
@@ -264,7 +263,7 @@ def execute_search(query, indexer, preprocessor):
     :return: List from the matching function containing all relevant doc_ids, List of all tfs for relevant doc_ids
     """
     # compile search patterns to test for
-    bool_pattern = re.compile("(\sAND NOT\s)|(\sOR NOT\s)|(\sAND\s)|(\sOR\s)")
+    bool_pattern = re.compile("(\s&&--\s)|(\s\|\|--\s)|(\s&&\s)|(\s\|\|\s)")
     prox_pattern = re.compile("#\d+")
     phra_pattern = re.compile('^".*"$')
 
@@ -387,7 +386,8 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
 
     if search_type == "boolean_and_tfidf":
         # Execute search for boolean queries considering ranking
-        boolean_search_pattern = re.compile('(\sAND NOT\s)|(\sOR NOT\s)|(\sAND\s)|(\sOR\s)|(#\d+)|^".*"$')
+        # boolean_search_pattern = re.compile('(\sAND NOT\s)|(\sOR NOT\s)|(\sAND\s)|(\sOR\s)|(#\d+)|^".*"$')
+        boolean_search_pattern = re.compile('(\s&&--\s)|(\s\|\|--\s)|(\s&&\s)|(\s\|\|\s)|(#\d+)|^".*"$')
 
         # check if boolean search component is in query
         if boolean_search_pattern.search(query) is not None:

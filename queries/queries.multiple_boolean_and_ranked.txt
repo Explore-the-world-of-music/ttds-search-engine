@@ -1,22 +1,22 @@
-1 Hound AND Coconut
-2 Hound AND Coconut AND coconut
-3 Hound AND Coconut AND Catholic
-4 Hound AND Coconut AND NOT Catholic
-5 Hound AND Coconut OR NOT Catholic
-6 Hound AND Coconut OR NOT Catholic AND coconut
-7 HOUND OR COCONUT
-8 HOUND OR COCONUT OR hOUND
-9 HOUND OR COCONUT OR MOUSE
-10 HOUND AND COCONUT OR cOCONUT
-11 HOUND AND COCONUT OR cOCONUT AND hOUND
+1 Hound && Coconut
+2 Hound && Coconut && coconut
+3 Hound && Coconut && Catholic
+4 Hound && Coconut &&-- Catholic
+5 Hound && Coconut ||-- Catholic
+6 Hound && Coconut ||-- Catholic && coconut
+7 HOUND || COCONUT
+8 HOUND || COCONUT || hOUND
+9 HOUND || COCONUT || MOUSE
+10 HOUND && COCONUT || cOCONUT
+11 HOUND && COCONUT || cOCONUT && hOUND
 12 "Glasgow Income Trust"
-13 "Glasgow Income Trust" AND GLasgow
-14 "Glasgow Income Trust" AND HOUSE
-15 "Glasgow Income Trust" AND MOUSE
+13 "Glasgow Income Trust" && GLasgow
+14 "Glasgow Income Trust" && HOUSE
+15 "Glasgow Income Trust" && MOUSE
 16 #5(hound,coconut, catholic)
 17 #2000(hound,coconut, catholic)
-18 #2000(hound,coconut, catholic) AND HOUND
-19 #2000(hound,coconut, catholic) OR MOUSE
+18 #2000(hound,coconut, catholic) && HOUND
+19 #2000(hound,coconut, catholic) || MOUSE
 20 MOUSE
 21 #3000(hound,coconut, catholic, Hound)
 22 #4000(hound,coconut, catholic, Hound, Coconut)

@@ -1,9 +1,9 @@
 16 "income taxes"
 17 #20(income, taxes)
-18 "middle east" AND peace
+18 "middle east" && peace
 19 "islam religion"
-20 "Financial times" AND NOT BBC
-21 "wall street" AND "dow jones"
+20 "Financial times" &&-- BBC
+21 "wall street" && "dow jones"
 22 #15(dow,stocks)
-23 DaswirdwohlniegefundenwerdenHoffentlich OR NOT Happiness
-24 Edinburgh OR NOT Happiness
+23 DaswirdwohlniegefundenwerdenHoffentlich ||-- Happiness
+24 Edinburgh ||-- Happiness

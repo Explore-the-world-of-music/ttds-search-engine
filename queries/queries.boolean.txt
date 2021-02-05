@@ -1,12 +1,12 @@
 1 Happiness
-2 Edinburgh AND SCOTLAND
-3 income AND taxes
+2 Edinburgh && SCOTLAND
+3 income && taxes
 4 "income taxes"
 5 #20(income, taxes)
-6 "middle east" AND peace
+6 "middle east" && peace
 7 "islam religion"
-8 "Financial times" AND NOT BBC
-9 "wall street" AND "dow jones"
+8 "Financial times" &&-- BBC
+9 "wall street" && "dow jones"
 10 #15(dow,stocks)
-11 DaswirdwohlniegefundenwerdenHoffentlich OR NOT Happiness
-12 Edinburgh OR NOT Happiness
+11 DaswirdwohlniegefundenwerdenHoffentlich ||-- Happiness
+12 Edinburgh ||-- Happiness
