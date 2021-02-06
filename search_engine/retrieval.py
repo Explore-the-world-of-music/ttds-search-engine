@@ -165,7 +165,7 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
         # Check if found candidates are actual true positives
         if len(terms) <= 2:
             # If only two terms were compared, take all results
-            for item in dict_candi[0]:
+            for _ in dict_candi[0]:
                 final_rel_doc_ids.append(doc_id)
         else:
             # For multiple terms delete all positions which are true across terms
@@ -263,9 +263,9 @@ def execute_search(query, indexer, preprocessor):
     :return: List from the matching function containing all relevant doc_ids, List of all tfs for relevant doc_ids
     """
     # compile search patterns to test for
-    bool_pattern = re.compile("(\s&&--\s)|(\s\|\|--\s)|(\s&&\s)|(\s\|\|\s)")
-    prox_pattern = re.compile("#\d+")
-    phra_pattern = re.compile('^".*"$')
+    bool_pattern = re.compile(r"(\s&&--\s)|(\s\|\|--\s)|(\s&&\s)|(\s\|\|\s)")
+    prox_pattern = re.compile(r"#\d+")
+    phra_pattern = re.compile(r'^".*"$')
 
     # check if boolean search
     if bool_pattern.search(query) is not None:

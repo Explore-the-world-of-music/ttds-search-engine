@@ -47,6 +47,7 @@ class Preprocessor():
         """
         tokenized = re.findall("[\w]+", line)
         line = [x.lower() for x in tokenized if x != ""]
+        # Todo: Combine stopping and stemming loop so that we only run once through lines
         if self.stopping:
             line = [x for x in line if x not in self.stop_set]
         if self.stemming:

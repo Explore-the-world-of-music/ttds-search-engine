@@ -43,6 +43,7 @@ class Indexer:
         """
         Function to save final index in a defined txt format
         """
+        # Todo: Observe if we need more efficient index storing methods
         if as_pickle:
             with open('index.pickle', 'wb') as file:
                 pickle.dump(self.index, file, protocol=pickle.HIGHEST_PROTOCOL)
