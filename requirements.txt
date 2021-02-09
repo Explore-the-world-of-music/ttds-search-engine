@@ -7,7 +7,7 @@ botocore @ file:///home/conda/feedstock_root/build_artifacts/botocore_1606257852
 brotlipy==0.7.0
 bz2file==0.98
 cachetools @ file:///home/conda/feedstock_root/build_artifacts/cachetools_1593420445823/work
-certifi==2020.11.8
+certifi==2020.12.5
 cffi @ file:///D:/bld/cffi_1606601395031/work
 chardet @ file:///D:/bld/chardet_1602255508636/work
 click==7.1.2
@@ -45,6 +45,7 @@ pyparsing==2.4.7
 PySocks @ file:///D:/bld/pysocks_1602327034683/work
 python-dateutil==2.8.1
 pytz==2020.1
+PyYAML==5.4.1
 regex @ file:///C:/ci/regex_1596811715751/work
 requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1605186911681/work
 rsa @ file:///home/conda/feedstock_root/build_artifacts/rsa_1591996208734/work
