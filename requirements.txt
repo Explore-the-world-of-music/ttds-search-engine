@@ -1,0 +1,66 @@
+aiohttp @ file:///D:/bld/aiohttp_1605734575480/work
+async-timeout==3.0.1
+attrs @ file:///home/conda/feedstock_root/build_artifacts/attrs_1605083924122/work
+boto==2.49.0
+boto3 @ file:///home/conda/feedstock_root/build_artifacts/boto3_1606273191657/work
+botocore @ file:///home/conda/feedstock_root/build_artifacts/botocore_1606257852916/work
+brotlipy==0.7.0
+bz2file==0.98
+cachetools @ file:///home/conda/feedstock_root/build_artifacts/cachetools_1593420445823/work
+certifi==2020.11.8
+cffi @ file:///D:/bld/cffi_1606601395031/work
+chardet @ file:///D:/bld/chardet_1602255508636/work
+click==7.1.2
+cryptography @ file:///D:/bld/cryptography_1604179264939/work
+cycler==0.10.0
+gensim @ file:///D:/bld/gensim_1589441310359/work
+google-api-core @ file:///D:/bld/google-api-core-split_1599169095664/work
+google-auth @ file:///home/conda/feedstock_root/build_artifacts/google-auth_1604068942758/work
+google-cloud-core @ file:///home/conda/feedstock_root/build_artifacts/google-cloud-core_1602093568796/work
+google-cloud-storage==1.19.0
+google-crc32c @ file:///D:/bld/google-crc32c_1602546733709/work
+google-resumable-media @ file:///home/conda/feedstock_root/build_artifacts/google-resumable-media_1602011069843/work
+googleapis-common-protos @ file:///D:/bld/googleapis-common-protos-feedstock_1604414944715/work
+grpcio @ file:///D:/bld/grpcio_1604365774672/work
+idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1593328102638/work
+jmespath @ file:///home/conda/feedstock_root/build_artifacts/jmespath_1589369830981/work
+joblib @ file:///tmp/build/80754af9/joblib_1601912903842/work
+kiwisolver @ file:///C:/ci/kiwisolver_1604014703538/work
+matplotlib @ file:///C:/ci/matplotlib-base_1597876438601/work
+mkl-fft==1.2.0
+mkl-random==1.1.1
+mkl-service==2.3.0
+multidict @ file:///D:/bld/multidict_1602413359780/work
+nltk @ file:///tmp/build/80754af9/nltk_1592496090529/work
+numpy @ file:///C:/ci/numpy_and_numpy_base_1603466732592/work
+olefile==0.46
+pandas @ file:///C:/ci/pandas_1601558512044/work
+Pillow @ file:///C:/ci/pillow_1603823068645/work
+protobuf==3.13.0
+pyasn1==0.4.8
+pyasn1-modules==0.2.7
+pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1593275161868/work
+pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1606535649775/work
+pyparsing==2.4.7
+PySocks @ file:///D:/bld/pysocks_1602327034683/work
+python-dateutil==2.8.1
+pytz==2020.1
+regex @ file:///C:/ci/regex_1596811715751/work
+requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1605186911681/work
+rsa @ file:///home/conda/feedstock_root/build_artifacts/rsa_1591996208734/work
+s3transfer @ file:///drone/src/build_artifacts/s3transfer_1602877463089/work
+scikit-learn==0.23.2
+scipy @ file:///C:/ci/scipy_1604596260408/work
+sip==4.19.13
+six @ file:///C:/ci/six_1605187374963/work
+smart-open @ file:///home/conda/feedstock_root/build_artifacts/smart_open_1606570085146/work
+snowballstemmer==2.0.0
+stemming==1.0
+threadpoolctl==2.1.0
+tornado==6.0.4
+tqdm @ file:///tmp/build/80754af9/tqdm_1605303662894/work
+typing-extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1602702424206/work
+urllib3 @ file:///home/conda/feedstock_root/build_artifacts/urllib3_1603125704209/work
+win-inet-pton @ file:///D:/bld/win_inet_pton_1602260115377/work
+wincertstore==0.2
+yarl @ file:///D:/bld/yarl_1605429651545/work
