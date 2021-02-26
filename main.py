@@ -33,10 +33,10 @@ if __name__ == "__main__":
     indexer = Indexer(config)
 
     # Build index
-    # indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
+    indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
 
     # Save index
-    # indexer.store_index()
+    indexer.store_index()
 
     # Add doc ids as index attribute
     indexer.add_all_doc_ids(doc_ids)
@@ -44,8 +44,8 @@ if __name__ == "__main__":
     # Load index (for testing)
     indexer.index = indexer.load_index()
 
-    # # Load boolean queries
-    # # Todo: Embed into final infrastructure
+    # # # Load boolean queries
+    # # # Todo: Embed into final infrastructure
     queries_num, queries = load_queries('queries/queries.boolean.txt')
 
     # # Execute Boolean queries for CW1
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             results = results + results_tmp
     with open("data/results/Ranked_AND_Boolean" + '_results_queries.txt', mode="w", encoding="utf-8") as f:
         f.writelines(results[:-1])
-    #
+    # #
     # # Load boolean + ranked queries
     queries_num, queries = load_queries('queries/queries.multiple_boolean_and_ranked.txt')
 
