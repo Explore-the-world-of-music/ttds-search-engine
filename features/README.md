@@ -1,6 +1,6 @@
 # Feature Documentation
 ## Query Completion (ngram_model.py)
-This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model for our data is available for download [here](https://www.dropbox.com/s/78bq8ogpdkxrtki/qc_model.pkl?dl=0) (1GB) and can be loaded using the `load_model` function.
+This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model for our data is available for download [here](https://www.dropbox.com/s/78bq8ogpdkxrtki/qc_model.pkl?dl=1) (1GB) and can be loaded using the `load_model` function.
 
 The class `Query_Completer` needs the parameter for `n` for initialization (n=3 in the current case).
 
@@ -32,5 +32,22 @@ print(qc.predict_next_token("Oops I"))
 # Output: ['Oops I did', 'Oops I mean', 'Oops I meant', 'Oops I got', 'Oops I forgot']
 print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 # Output: ['Es ragen aus ihrem aufgeschlitzten Bauch rippen'] <- "aufgeschlitzten Bauch" only occured in this context 
+```
+
+## Recommendation Module (recommender.py)
+This module trains and staores a Doc2Vec model to predict the most similar lyrics of a given song. The class `RecommendationEngine` contains the model and a dictionary of the contained Song IDs. The trained [model](https://www.dropbox.com/s/lxuhrvcagd74d5t/word2vec2.model?dl=1) and the [Song ID dictionary](https://www.dropbox.com/s/c6matnwruuxujx9/rec_model.pkl?dl=1) are available for download .
+
+### Important Functions for Connection
+- `save_model(filepath_model, filepath_dict)` saves the model in a .model and the Song ID dictionary in a pickle file
+- `load_model(filepath_model, filepath_dict)` restores the model from a .model and the Song ID dictionary from a pickle file
+- `find_similar_songs_known_song(song_id, n)` return the Song IDs for the `n` most similar songs for the given song ID
+
+
+```Py
+rec_eng = RecommendationEngine()
+rec_eng.load_model("word2vec2.model", "rec_model.pkl")
+
+print(rec_eng.find_similar_songs_known_song(168861, 10))
+# Output: [137760, 137761, 461554, 498408, 479446, 157127, 438013, 482450, 285817, 254288]
 ```
 

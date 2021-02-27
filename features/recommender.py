@@ -1,9 +1,13 @@
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
-
+import os
+import random
+import dill
+import time
 
 class RecommendationEngine():
     def __init__(self, vector_size = 100, learning_rate = 0.0025, min_learning_rate = 0.0000025, min_count = 1):
         self.model = Doc2Vec(vector_size = vector_size, alpha = learning_rate, min_alpha= min_learning_rate, min_count = min_count)
+        self.contained_doc_ids = {}
 
     def train(self, tokenized_lyrics_list, song_ids, max_epochs):
 
@@ -17,7 +21,11 @@ class RecommendationEngine():
 
         # Bring Documents into relevant format for Doc2Vec
         # Can be simply a list of elements, but for larger corpora,consider an iterable that streams the documents directly from disk/network.
-        tagged_data = [TaggedDocument(words=tokenized_lyrics, tags=[song_id]) for tokenized_lyrics, song_id in zip(tokenized_lyrics_list, song_ids)]
+        tagged_data = []
+        for tokenized_lyrics, song_id in zip(tokenized_lyrics_list, song_ids):
+            tagged_data.append(TaggedDocument(words=tokenized_lyrics, tags=[str(song_id)]))
+            self.contained_doc_ids[song_id] = True
+
         self.model.build_vocab(tagged_data)
 
         # save learning rate and determine linear decay rate
@@ -50,10 +58,15 @@ class RecommendationEngine():
 
         :return: List of the most similar Song IDs (int)
         '''
-
-        # Find and return the most similar song IDs
-        similar_docs = self.model.docvecs.most_similar(song_id, topn = n)
-        return [similar_doc[0] for similar_doc in similar_docs]
+        if song_id not in self.contained_doc_ids:
+            # If the song_id is not trained on --> return random sample of doc IDs
+            # TODO: Replace with getting the lyrics from the database and then predict
+            print("Random")
+            return random.sample(list(self.contained_doc_ids), n)
+        else:
+            # Find and return the most similar song IDs
+            similar_docs = self.model.docvecs.most_similar(str(song_id), topn = n)
+            return [int(similar_doc[0]) for similar_doc in similar_docs]
 
     def find_similar_songs_unknown_song(self, tokenized_lyric_list, n):
         '''
@@ -70,40 +83,34 @@ class RecommendationEngine():
 
         # Find and return the most similar song IDs
         similar_docs = self.model.docvecs.most_similar([vector], topn = n)
-        return [similar_doc[0] for similar_doc in similar_docs]
+        print(similar_docs)
+        return [int(similar_doc[0]) for similar_doc in similar_docs]
     
 
 
-    def save_model(self, filepath):
+    def save_model(self, filepath_model, filepath_dict):
         '''
-        Saves the current model
+        Saves the current model and the contained_doc_ids
 
-        :param filepath: path to the save location - File has to be of type .model  (str)
+        :param filepath_model: path to the save location of model - File has to be of type .model  (str)
+        :param filepath_dict: path to the save location of dictionary - File has to be of type .pkl  (str)
         '''
-        self.model.save(filepath)
+        self.model.save(filepath_model)
 
-    def load_model(self, filepath):
+        with open(filepath_dict, 'wb') as file:
+            dill.dump(self.contained_doc_ids, file)
+
+    def load_model(self, filepath_model, filepath_dict):
         '''
-        Loades a saved model
+        Loades a saved model and the contained_doc_ids
 
-        :param filepath: path to the saved location - File has to be of type .model  (str)
+        :param filepath_model: path to the saved location of model - File has to be of type .model  (str)
+        :param filepath_dict: path to the saved location of dictionary - File has to be of type .pkl  (str)
         '''
-        self.model = Doc2Vec.load(filepath)
+        self.model = Doc2Vec.load(filepath_model)
+
+        with open(filepath_dict, 'rb') as file:
+            self.contained_doc_ids = dill.load(file)
 
 
 
-
-
-'''
-data = [["i","love","machine","learning.","its","awesome."],["i","love","coding","in","python"],["love","building","chatbots"],["chat","amagingly","well"]]
-ids = [1,2,3,4]
-
-rec_eng = RecommendationEngine()
-rec_eng.train(data, ids, max_epochs = 10)
-
-print(rec_eng.find_similar_songs_known_song(1, 1))
-print(rec_eng.find_similar_songs_unknown_song(["i", "love", "chatbots"], 1))
-
-rec_eng.save_model("word2vec2.model")
-rec_eng.load_model("word2vec2.model")
-print(rec_eng.find_similar_songs_known_song(1, 1))'''
