@@ -8,7 +8,7 @@ The class `Query_Completer` needs the parameter for `n` for initialization (n=3 
 - `add_single_lyric(lyric)` adds a new unprocessed lyric (str) to the model
 - `save_model(filename)` saves the model in a pickle file
 - `load_model(filename)` restores the model from a pickle file (might take a while)
-- `predict_next_token(query)` predicts the five most probable continuations for a unprocessed query based on the last n-1 tokens of the query
+- `predict_next_token(query)` predicts the five most probable continuations for a unprocessed query (str) based on the last n-1 tokens of the query
 
 ### Examples
 ```Py

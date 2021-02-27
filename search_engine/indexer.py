@@ -29,6 +29,7 @@ class Indexer:
 
         # Create dictionary entry for each token and doc id
         for doc_id, raw_line in zip(doc_ids, raw_doc_texts):
+
             line = preprocessor.preprocess(raw_line)
             for pos, token in enumerate(line):
                 index[token][doc_id].append(pos)
