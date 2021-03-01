@@ -4,6 +4,7 @@ import dill
 import os
 import re
 import time
+from operator import itemgetter
 
 
 
@@ -126,38 +127,56 @@ class Query_Completer():
             self.model = dill.load(file)
 
 
+    def reduce_size(self, n):
+        """
+        This function reduces the size of the current dictionary to the most observed n terms.
+
+        :param n: number of predictions too keep for each ngram (int)
+        """
+
+        for key, _ in self.model.items():
+            if len(self.model[key]) <= n:
+                continue
+            else:
+                self.model[key] = dict(sorted(self.model[key].items(), key = itemgetter(1), reverse = True)[:n])
+
+
+'''
 # Set path as needed for Query_Completer class
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 
-'''
-qc = Query_Completer(n = 3)
 
 # Train on current data
 import pandas as pd
 
 begin = time.time()
 qc = Query_Completer(n = 3)
-data = pd.read_csv("data-song-sample.csv")
+#data = pd.read_csv("data-song_v1.csv")
 
-for idx, row in data.iterrows():
-    qc.add_single_lyric(row["SongLyrics"])
+#for idx, row in data.iterrows():
+#    qc.add_single_lyric(row["SongLyrics"])
 
-qc.save_model("qc_model.pkl")
-print(f"Training and saving took: {time.time() - begin}")
+#qc.save_model("qc_new_data_model.pkl")
+#print(f"Training and saving took: {time.time() - begin}")
 
 
 # Reload the model and make predictions
-qc.load_model("qc_model.pkl")
-print("Predicting")
-print(qc.predict_next_token("deux trois"))
-print(qc.predict_next_token("Cinq six sept"))
-print(qc.predict_next_token("did it"))
-print(qc.predict_next_token("Oops I"))
-print(qc.predict_next_token("My loneliness"))
-print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))'''
+qc.load_model("qc_new_data_model.pkl")
+begin = time.time()
+qc.reduce_size(5)
+print(f"Reducting took: {time.time() - begin}")
+
+qc.save_model("qc_new_data_reduced_model.pkl")
+
+#print(qc.predict_next_token("deux trois"))
+#print(qc.predict_next_token("Cinq six sept"))
+#print(qc.predict_next_token("did it"))
+#print(qc.predict_next_token("Oops I"))
+#print(qc.predict_next_token("My loneliness"))
+#print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))'''
 
 
 
