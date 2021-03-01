@@ -141,16 +141,17 @@ class Query_Completer():
 
     def reduce_size(self, n):
         """
-        This function reduces the size of the current dictionary to the most observed n terms.
+        DEPRECTED: This function reduces the size of the current dictionary to the most observed n terms.
 
         :param n: number of predictions too keep for each ngram (int)
         """
 
-        for key, _ in self.bigram.items():
-            if len(self.bigram[key]) <= n:
-                continue
-            else:
-                self.bigram[key] = dict(sorted(self.bigram[key].items(), key = itemgetter(1), reverse = True)[:n])
+        print("Function Deprecated")
+        #for key, _ in self.bigram.items():
+        #    if len(self.bigram[key]) <= n:
+        #        continue
+        #    else:
+        #        self.bigram[key] = dict(sorted(self.bigram[key].items(), key = itemgetter(1), reverse = True)[:n])
 
 
 
