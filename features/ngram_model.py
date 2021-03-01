@@ -4,6 +4,7 @@ import dill
 import os
 import re
 import time
+from nltk.stem import PorterStemmer
 
 
 
@@ -16,7 +17,9 @@ class Query_Completer():
         self.mapping_to_int = {}
         self.mapping_to_token = {}
 
-    def preprocess_lyrics(self, lyrics):
+        self.stemmer = PorterStemmer()
+
+    def tokenize_lyrics(self, lyrics):
         """
         Function which returns the tokenized and lowered lyrics
 
@@ -24,6 +27,7 @@ class Query_Completer():
         :return line: Tokenized and lowered list of tokens (list)
         """
         tokenized = re.findall(r"[\w]+", lyrics)
+
         line = [x.lower() for x in tokenized if x != ""]
         return line
 
@@ -42,16 +46,18 @@ class Query_Completer():
             if idx-self.n <= -1:
                 # Left padding the first n-1 observations
                 existing_words = sentence[0:idx+1]
-                cur_list =  [None] * (self.n-len(existing_words)) + existing_words
 
-                if None in cur_list:
+                # TODO Replace "None" with something different
+                cur_list =  ["None"] * (self.n-len(existing_words)) + existing_words
+
+                if "None" in cur_list:
                     ngram_list.append(tuple(cur_list))
 
             elif idx+self.n > (len(sentence)):
 
                 # Right padding the last n-1 observations
                 existing_words = sentence[idx:len(sentence)]
-                cur_list = existing_words + [None] * (self.n-len(existing_words))
+                cur_list = existing_words + ["None"] * (self.n-len(existing_words))
                 ngram_list.append(tuple(cur_list))
 
             else:
@@ -67,11 +73,15 @@ class Query_Completer():
 
         :param lyrics: The lyrics (str)
         """
-        token_list = self.preprocess_lyrics(lyrics)
+        # Tokenize the lyrics 
+        token_list = self.tokenize_lyrics(lyrics)
         ngram_list = self.create_ngram(token_list)
 
         for tokens in ngram_list:
-            mapping = [0]*len(tokens) # create mapping to pass to model 
+            # Stem the identifiers and leave the final word as is
+            tokens = [self.stemmer.stem(token) for token in tokens[:-1]] + [tokens[-1]]
+
+            mapping = [0]*len(tokens) # create mapping to int to pass to model 
             for idx, token in enumerate(tokens):
 
                 # create a mapping for not existing tokens
@@ -109,7 +119,7 @@ class Query_Completer():
         :return sorted_result: Sorted list of most probable continuations + sentence (list of str)
         """
         
-        query_token_list = self.preprocess_lyrics(current_query)
+        query_token_list = self.tokenize_lyrics(current_query)
 
 
 
@@ -119,8 +129,8 @@ class Query_Completer():
 
         # extracts the last m = n-1 tokens from the token list
         last_m_tokens = query_token_list[-(self.n-1):]
+        last_m_tokens = [self.stemmer.stem(token) for token in last_m_tokens] 
 
-        # TODO: Check if token exists and if not replace with None ID
         query_mapping = [0]*len(last_m_tokens)
 
         # Finds mapping for existing token but leaves 0 = None for each non existing token
@@ -206,7 +216,7 @@ import pandas as pd
 
 
 qc = Query_Completer(n = 3)
-data = pd.read_csv("data-song_v1.csv")[0:1000]
+data = pd.read_csv("data-song_v1.csv")[0:10000]
 
 begin = time.time()
 for idx, row in data.iterrows():
