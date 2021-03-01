@@ -12,6 +12,7 @@ class Query_Completer():
     def __init__(self):
         self.bigram = defaultdict(lambda: defaultdict(lambda: 0))
         self.trigram = defaultdict(lambda: defaultdict(lambda: 0))
+        self.fourgram = defaultdict(lambda: defaultdict(lambda: 0))
 
     def preprocess_lyrics(self, lyrics):
         """
@@ -68,6 +69,7 @@ class Query_Completer():
         token_list = self.preprocess_lyrics(lyrics)
         bigram_list = self.create_ngram(token_list, n = 2)
         trigram_list = self.create_ngram(token_list, n = 3)
+        fourgram_list = self.create_ngram(token_list, n = 4)
 
         for tokens in bigram_list:
             # The last token in the context of the former tokens is more likely through this example
@@ -75,6 +77,9 @@ class Query_Completer():
 
         for tokens in trigram_list:
             self.trigram[tokens[:-1]][tokens[-1]] += 1
+
+        for tokens in fourgram_list:
+            self.fourgram[tokens[:-1]][tokens[-1]] += 1
 
 
     def add_lyrics(self, lyric_list):
@@ -89,11 +94,12 @@ class Query_Completer():
 
     def predict_next_token(self, current_query):
         """
-        Function which returns most probable next words based on the model
+        Function which returns most probable next words based on the matching ngram
 
         :param current_query: The currently inserted query (str)
 
-        :return sorted_result: Sorted list of most probable continuations + sentence (list of str)
+        :return sorted_result:  Sorted list of most probable continuations + sentence (list of str)
+                                empty if no results are found
         """
         
         query_token_list = self.preprocess_lyrics(current_query)
@@ -101,14 +107,12 @@ class Query_Completer():
         # Either n or max(n, maximum_ngram)
         n = len(query_token_list)
 
-        #if len(query_token_list) < n-1:
-            # If not enough tokens in query
-        #    return None
-
         # extracts the last m = n-1 tokens from the token list
         last_m_tokens = query_token_list[-(n):]
 
-        if n+1 == 3:
+        if n+1 == 4:
+            results = dict(self.fourgram[tuple(last_m_tokens)]) # returns the relevant dict of the trigram
+        elif n+1 == 3:
             results = dict(self.trigram[tuple(last_m_tokens)]) # returns the relevant dict of the trigram
         else:
             results = dict(self.bigram[tuple(last_m_tokens)]) # returns the relevant dict of the bigram (basic model)
@@ -118,25 +122,31 @@ class Query_Completer():
         return sorted_result
 
 
-    def save_model(self, filepath):
+    def save_model(self):
         """
-        Function which saves the current model
+        Function which saves the current models
+        """
+        filenames = ["qc_bigram", "qc_trigram", "qc_fourgram"]
+        models = [self.bigram, self.trigram, self.fourgram]
 
-        :param filepath: path to the save location - File has to be of type .pkl  (str)
-        """
-        with open(filepath, 'wb') as file:
-            dill.dump(self.bigram, file)
+        for filename, model in zip(filenames, models):
+            with open(filename+".pkl", 'wb') as file:
+                dill.dump(model, file)
 
         
-    def load_model(self, filepath):
+    def load_model(self):
         """
-        Function which loades the model in the file
+        Function which loades the models from the files
 
-        :param filepath: path to the save location - File has to be of type .pkl  (str)
         """
-
-        with open(filepath, 'rb') as file:
+        with open("qc_bigram"+".pkl", 'rb') as file:
             self.bigram = dill.load(file)
+
+        with open("qc_trigram"+".pkl", 'rb') as file:
+            self.trigram = dill.load(file)
+
+        with open("qc_fourgram"+".pkl", 'rb') as file:
+            self.fourgram = dill.load(file)
 
 
     def reduce_size(self, n):
@@ -146,7 +156,7 @@ class Query_Completer():
         :param n: number of predictions too keep for each ngram (int)
         """
 
-        print("Function Deprecated")
+        print("Function reduce_size Deprecated")
         #for key, _ in self.bigram.items():
         #    if len(self.bigram[key]) <= n:
         #        continue
@@ -172,26 +182,16 @@ data = pd.read_csv("data-song_v1.csv")
 for idx, row in data[0:1000].iterrows():
     qc.add_single_lyric(row["SongLyrics"])
 
-qc.save_model("qc_bigram_text_model.pkl")
+qc.save_model()
 print(f"Training and saving took: {time.time() - begin}")
 
+qc.load_model()
 
-# Reload the model and make predictions
-#qc.load_model("qc_new_data_model.pkl")
-#begin = time.time()
-#qc.reduce_size(5)
-#print(f"Reducting took: {time.time() - begin}")
-
-#qc.save_model("qc_new_data_reduced_model.pkl")
-
-print(qc.predict_next_token("deux"))
-print(qc.predict_next_token("trois"))
 print(qc.predict_next_token("deux trois"))
+print(qc.predict_next_token("deux trois quatre"))
+print(qc.predict_next_token("deux trois quatre"))
 print(qc.predict_next_token("Cinq six"))
-#print(qc.predict_next_token("did it"))
-#print(qc.predict_next_token("Oops I"))
-#print(qc.predict_next_token("My loneliness"))
-#print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))'''
-
-
-
+print(qc.predict_next_token("did it"))
+print(qc.predict_next_token("Oops I"))
+print(qc.predict_next_token("My loneliness"))
+print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
