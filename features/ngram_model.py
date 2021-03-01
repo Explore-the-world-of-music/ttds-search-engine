@@ -4,15 +4,13 @@ import dill
 import os
 import re
 import time
-from operator import itemgetter
 
 
 
 class Query_Completer():
-    def __init__(self):
-        self.bigram = defaultdict(lambda: defaultdict(lambda: 0))
-        self.trigram = defaultdict(lambda: defaultdict(lambda: 0))
-        self.fourgram = defaultdict(lambda: defaultdict(lambda: 0))
+    def __init__(self, n):
+        self.n = n
+        self.model = defaultdict(dict)
 
     def preprocess_lyrics(self, lyrics):
         """
@@ -26,36 +24,35 @@ class Query_Completer():
         return line
 
 
-    def create_ngram(self, sentence, n):
+    def create_ngram(self, sentence):
         """
         Function which returns the ngrams of the sentence
 
         :param sentence: Tokens (list)
-        :param n: number of tokens (int)
         :return ngram_list: List containing all the possible ngrams of the sentence in tuples of n items (list of tuples)
         """
 
         ngram_list = []
         for idx, word in enumerate(sentence):
 
-            if idx-n <= -1:
+            if idx-self.n <= -1:
                 # Left padding the first n-1 observations
                 existing_words = sentence[0:idx+1]
-                cur_list =  [None] * (n-len(existing_words)) + existing_words
+                cur_list =  [None] * (self.n-len(existing_words)) + existing_words
 
                 if None in cur_list:
                     ngram_list.append(tuple(cur_list))
 
-            elif idx+n > (len(sentence)):
+            elif idx+self.n > (len(sentence)):
 
                 # Right padding the last n-1 observations
                 existing_words = sentence[idx:len(sentence)]
-                cur_list = existing_words + [None] * (n-len(existing_words))
+                cur_list = existing_words + [None] * (self.n-len(existing_words))
                 ngram_list.append(tuple(cur_list))
 
             else:
                 # Append n-grams for all other observations
-                ngram_list.append(tuple(sentence[idx-n:idx]))
+                ngram_list.append(tuple(sentence[idx-self.n:idx]))
 
         return ngram_list
 
@@ -67,19 +64,14 @@ class Query_Completer():
         :param lyrics: The lyrics (str)
         """
         token_list = self.preprocess_lyrics(lyrics)
-        bigram_list = self.create_ngram(token_list, n = 2)
-        trigram_list = self.create_ngram(token_list, n = 3)
-        fourgram_list = self.create_ngram(token_list, n = 4)
+        ngram_list = self.create_ngram(token_list)
 
-        for tokens in bigram_list:
+        for tokens in ngram_list:
             # The last token in the context of the former tokens is more likely through this example
-            self.bigram[tokens[:-1]][tokens[-1]] += 1
-
-        for tokens in trigram_list:
-            self.trigram[tokens[:-1]][tokens[-1]] += 1
-
-        for tokens in fourgram_list:
-            self.fourgram[tokens[:-1]][tokens[-1]] += 1
+            if tokens[-1] not in self.model[tokens[:-1]]:
+                self.model[tokens[:-1]][tokens[-1]] = 1
+            else:
+                self.model[tokens[:-1]][tokens[-1]] += 1
 
 
     def add_lyrics(self, lyric_list):
@@ -94,75 +86,47 @@ class Query_Completer():
 
     def predict_next_token(self, current_query):
         """
-        Function which returns most probable next words based on the matching ngram
+        Function which returns most probable next words based on the model
 
         :param current_query: The currently inserted query (str)
 
-        :return sorted_result:  Sorted list of most probable continuations + sentence (list of str)
-                                empty if no results are found
+        :return sorted_result: Sorted list of most probable continuations + sentence (list of str)
         """
         
         query_token_list = self.preprocess_lyrics(current_query)
-        
-        # Either n or max(n, maximum_ngram)
-        n = len(query_token_list)
+
+        if len(query_token_list) < self.n-1:
+            # If not enough tokens in query
+            return None
 
         # extracts the last m = n-1 tokens from the token list
-        last_m_tokens = query_token_list[-(n):]
-
-        if n+1 == 4:
-            results = dict(self.fourgram[tuple(last_m_tokens)]) # returns the relevant dict of the trigram
-        elif n+1 == 3:
-            results = dict(self.trigram[tuple(last_m_tokens)]) # returns the relevant dict of the trigram
-        else:
-            results = dict(self.bigram[tuple(last_m_tokens)]) # returns the relevant dict of the bigram (basic model)
+        last_m_tokens = query_token_list[-(self.n-1):]
+        results = dict(self.model[tuple(last_m_tokens)]) # returns the relevant dict of the model
         
         # Sorts the keys by the value and returns them with the most probable word in the first position
         sorted_result = [current_query + " " + word for word, v in sorted(results.items(), key=lambda item: item[1],reverse = True)[0:5]]        
         return sorted_result
 
 
-    def save_model(self):
+    def save_model(self, filepath):
         """
-        Function which saves the current models
-        """
-        filenames = ["qc_bigram", "qc_trigram", "qc_fourgram"]
-        models = [self.bigram, self.trigram, self.fourgram]
+        Function which saves the current model
 
-        for filename, model in zip(filenames, models):
-            with open(filename+".pkl", 'wb') as file:
-                dill.dump(model, file)
+        :param filepath: path to the save location - File has to be of type .pkl  (str)
+        """
+        with open(filepath, 'wb') as file:
+            dill.dump(self.model, file)
 
         
-    def load_model(self):
+    def load_model(self, filepath):
         """
-        Function which loades the models from the files
+        Function which loades the model in the file
 
-        """
-        with open("qc_bigram"+".pkl", 'rb') as file:
-            self.bigram = dill.load(file)
-
-        with open("qc_trigram"+".pkl", 'rb') as file:
-            self.trigram = dill.load(file)
-
-        with open("qc_fourgram"+".pkl", 'rb') as file:
-            self.fourgram = dill.load(file)
-
-
-    def reduce_size(self, n):
-        """
-        DEPRECTED: This function reduces the size of the current dictionary to the most observed n terms.
-
-        :param n: number of predictions too keep for each ngram (int)
+        :param filepath: path to the save location - File has to be of type .pkl  (str)
         """
 
-        print("Function reduce_size Deprecated")
-        #for key, _ in self.bigram.items():
-        #    if len(self.bigram[key]) <= n:
-        #        continue
-        #    else:
-        #        self.bigram[key] = dict(sorted(self.bigram[key].items(), key = itemgetter(1), reverse = True)[:n])
-
+        with open(filepath, 'rb') as file:
+            self.model = dill.load(file)
 
 
 # Set path as needed for Query_Completer class
@@ -171,27 +135,52 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 
+'''
+qc = Query_Completer(n = 3)
+qc.load_model("qc_new_data_model.pkl")
+print(len(qc.model))
+
+with open("keys.txt", "w", encoding = "utf-8") as out:
+    for i in qc.model.keys():
+        out.write(str(i) + "\n")
+
+unique = set()
+
+
+with open("unique.txt", "w", encoding = "utf-8") as out:
+    for key in qc.model.keys():
+        unique.update(list(key)) 
+    for i in unique:
+        out.write(str(i) + "\n")
+print(len(unique))   
+'''
+
+qc = Query_Completer(n = 3)
 
 # Train on current data
 import pandas as pd
 
-begin = time.time()
-qc = Query_Completer()
-data = pd.read_csv("data-song_v1.csv")
 
-for idx, row in data[0:1000].iterrows():
+qc = Query_Completer(n = 3)
+data = pd.read_csv("data-song_v1.csv")[0:1000]
+
+begin = time.time()
+for idx, row in data.iterrows():
     qc.add_single_lyric(row["SongLyrics"])
 
-qc.save_model()
+qc.save_model("qc_model.pkl")
 print(f"Training and saving took: {time.time() - begin}")
 
-qc.load_model()
 
+# Reload the model and make predictions
+qc.load_model("qc_model.pkl")
+print("Predicting")
 print(qc.predict_next_token("deux trois"))
-print(qc.predict_next_token("deux trois quatre"))
-print(qc.predict_next_token("deux trois quatre"))
-print(qc.predict_next_token("Cinq six"))
+print(qc.predict_next_token("Cinq six sept"))
 print(qc.predict_next_token("did it"))
-print(qc.predict_next_token("Oops I"))
-print(qc.predict_next_token("My loneliness"))
-print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
+#print(qc.predict_next_token("Oops I"))
+#print(qc.predict_next_token("My loneliness"))
+#print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))'''
+
+
+
