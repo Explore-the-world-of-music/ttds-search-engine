@@ -182,6 +182,20 @@ class Query_Completer():
 
         self.last_mapping = max(self.mapping_to_int, key = self.mapping_to_int.get)
 
+    def reduce_model(self, cutoff):
+        to_delete = []
+        for key, subdict in self.model.items():
+            count = 0
+            for _, cur_count in subdict.items():
+                count += cur_count
+
+            if count <= cutoff:
+                to_delete.append(key)
+
+        for key in to_delete:
+            del self.model[key]
+
+
 
 # Set path as needed for Query_Completer class
 abspath = os.path.abspath(__file__)
@@ -216,11 +230,17 @@ import pandas as pd
 
 
 qc = Query_Completer(n = 3)
-data = pd.read_csv("data-song_v1.csv")[0:10000]
+data = pd.read_csv("data-song_v1.csv")
 
 begin = time.time()
-for idx, row in data.iterrows():
+for ids, (idx, row) in enumerate(data.iterrows()):
+    if ids%1000 == 0:
+        print(f"{ids} out of {data.shape[0]}", end='\r')
     qc.add_single_lyric(row["SongLyrics"])
+
+begin2 = time.time()
+qc.reduce_model(5)
+print(f"cutoff took: {time.time() - begin2}")
 
 qc.save_model("qc_model.pkl")
 print(f"Training and saving took: {time.time() - begin}")
