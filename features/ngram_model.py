@@ -12,6 +12,10 @@ class Query_Completer():
         self.n = n
         self.model = defaultdict(dict)
 
+        self.last_mapping = -1
+        self.mapping_to_int = {}
+        self.mapping_to_token = {}
+
     def preprocess_lyrics(self, lyrics):
         """
         Function which returns the tokenized and lowered lyrics
@@ -67,11 +71,23 @@ class Query_Completer():
         ngram_list = self.create_ngram(token_list)
 
         for tokens in ngram_list:
-            # The last token in the context of the former tokens is more likely through this example
-            if tokens[-1] not in self.model[tokens[:-1]]:
-                self.model[tokens[:-1]][tokens[-1]] = 1
-            else:
-                self.model[tokens[:-1]][tokens[-1]] += 1
+            mapping = [0]*len(tokens) # create mapping to pass to model 
+            for idx, token in enumerate(tokens):
+
+                # create a mapping for not existing tokens
+                if token not in self.mapping_to_int:
+                    self.last_mapping += 1
+                    self.mapping_to_int[token] = self.last_mapping
+                    self.mapping_to_token[self.last_mapping] = token
+
+                # create mapping to pass to model
+                mapping[idx] = self.mapping_to_int[token]
+
+            # Add the ngram to the model
+            if mapping[-1] not in self.model[tuple(mapping[:-1])]:
+                self.model[tuple(mapping[:-1])][mapping[-1]] = 1
+            else: 
+                self.model[tuple(mapping[:-1])][mapping[-1]] += 1
 
 
     def add_lyrics(self, lyric_list):
@@ -95,16 +111,30 @@ class Query_Completer():
         
         query_token_list = self.preprocess_lyrics(current_query)
 
+
+
         if len(query_token_list) < self.n-1:
             # If not enough tokens in query
             return None
 
         # extracts the last m = n-1 tokens from the token list
         last_m_tokens = query_token_list[-(self.n-1):]
-        results = dict(self.model[tuple(last_m_tokens)]) # returns the relevant dict of the model
+
+        # TODO: Check if token exists and if not replace with None ID
+        query_mapping = [0]*len(last_m_tokens)
+
+        # Finds mapping for existing token but leaves 0 = None for each non existing token
+        for idx, q_token in enumerate(last_m_tokens):
+            try:
+                query_mapping[idx] = self.mapping_to_int[q_token]
+            except KeyError:
+                continue
+
+        results = dict(self.model[tuple(query_mapping)]) # returns the relevant dict of the model
         
         # Sorts the keys by the value and returns them with the most probable word in the first position
-        sorted_result = [current_query + " " + word for word, v in sorted(results.items(), key=lambda item: item[1],reverse = True)[0:5]]        
+        # TODO: Solve return of None which is currently just parsed into a string
+        sorted_result = [current_query + " " + str(self.mapping_to_token[int_map]) for int_map, v in sorted(results.items(), key=lambda item: item[1],reverse = True)[0:5]]        
         return sorted_result
 
 
@@ -114,8 +144,14 @@ class Query_Completer():
 
         :param filepath: path to the save location - File has to be of type .pkl  (str)
         """
-        with open(filepath, 'wb') as file:
+        with open("qc_model"+".pkl", 'wb') as file:
             dill.dump(self.model, file)
+
+        with open("qc_map_to_int"+".pkl", 'wb') as file:
+            dill.dump(self.mapping_to_int, file)
+
+        with open("qc_map_to_token"+".pkl", 'wb') as file:
+            dill.dump(self.mapping_to_token, file)
 
         
     def load_model(self, filepath):
@@ -127,6 +163,14 @@ class Query_Completer():
 
         with open(filepath, 'rb') as file:
             self.model = dill.load(file)
+
+        with open("qc_map_to_int"+".pkl", 'rb') as file:
+            self.mapping_to_int = dill.load(file)
+
+        with open("qc_map_to_token"+".pkl", 'rb') as file:
+            self.mapping_to_token = dill.load(file)
+
+        self.last_mapping = max(self.mapping_to_int, key = self.mapping_to_int.get)
 
 
 # Set path as needed for Query_Completer class
@@ -173,11 +217,15 @@ print(f"Training and saving took: {time.time() - begin}")
 
 
 # Reload the model and make predictions
-qc.load_model("qc_model.pkl")
+#qc.load_model("qc_model.pkl")
+
 print("Predicting")
+begin = time.time()
 print(qc.predict_next_token("deux trois"))
 print(qc.predict_next_token("Cinq six sept"))
 print(qc.predict_next_token("did it"))
+print(qc.predict_next_token("HALLO I BIMS"))
+print(f"Predicting took: {time.time() - begin}")
 #print(qc.predict_next_token("Oops I"))
 #print(qc.predict_next_token("My loneliness"))
 #print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))'''
