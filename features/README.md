@@ -1,14 +1,15 @@
 # Feature Documentation
 ## Query Completion (ngram_model.py)
-This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The [pretrained model](https://www.dropbox.com/s/vlxtld2bb4yazlm/qc_new_data_model.pkl?dl=1) (1.4GB) for our new data is available for download and our [reduced model](https://www.dropbox.com/s/eno5xzl32upw4u9/qc_new_data_reduced_model.pkl?dl=1) (1.2GB) are available for download and can be loaded using the `load_model` function.
+This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model and the relevant mappings for our data is available for download [here](https://www.dropbox.com/sh/hmpphonwiyxyc0q/AADCzZIz2Aa6I93NPQycLlQoa?dl=0) and can be loaded using the `load_model` function.
 
 The class `Query_Completer` needs the parameter for `n` for initialization (n=3 in the current case).
 
 ### Important Functions for Connection
-- `add_single_lyric(lyric)` adds a new unprocessed lyric (str) to the model
-- `save_model(filename)` saves the model in a pickle file
-- `load_model(filename)` restores the model from a pickle file (might take a while)
-- `predict_next_token(query)` predicts the five most probable continuations for a unprocessed query (str) based on the last n-1 tokens of the query
+- `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
+- `save_model(model_filepath, map_to_int_filepath, map_to_token_filepath)` saves the models in pickle files - default values exist
+- `load_model(model_filepath, map_to_int_filepath, map_to_token_filepath)` restores the models from pickle files - default values exist
+- `predict_next_token(current_query)` predicts the five most probable continuations for a unprocessed query based on the last n-1 tokens of the query
+- `reduce_model(cutoff)` reduces the model by removing the identifiers which occured less than 'cutoff' times
 
 ### Examples
 ```Py
@@ -21,9 +22,12 @@ qc = Query_Completer(n = 3)
 for idx, row in data.iterrows():
     qc.add_single_lyric(row["SongLyrics"])
 
+# Reducing the size of the model    
+qc.reduce_model(5)
+
 # Saving and reloading of the model
-qc.save_model("qc_model.pkl")
-qc.load_model("qc_model.pkl")
+qc.save_model()
+qc.load_model()
 
 # Predicting some continuations
 print(qc.predict_next_token("deux trois"))
@@ -31,7 +35,7 @@ print(qc.predict_next_token("deux trois"))
 print(qc.predict_next_token("Oops I"))
 # Output: ['Oops I did', 'Oops I mean', 'Oops I meant', 'Oops I got', 'Oops I forgot']
 print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
-# Output: ['Es ragen aus ihrem aufgeschlitzten Bauch rippen'] <- "aufgeschlitzten Bauch" only occured in this context 
+# Output: ['Es ragen aus ihrem aufgeschlitzten Bauch rippen'] <- "aufgeschlitzten Bauch" only occured in this context and wont be part of the model after reduction
 ```
 
 ## Recommendation Module (recommender.py)
