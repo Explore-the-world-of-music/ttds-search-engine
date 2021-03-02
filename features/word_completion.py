@@ -42,13 +42,15 @@ class Word_Completer():
         :param lyrics: The lyrics (str)
         """
 
-        query_part = query.split()[-1].lower() # Extract the last token
+        query_parts = query.lower().split()
+        query_prior = " ".join(query_parts[:-1])
+        query_relevant = query_parts[-1] # Extract the last token
 
         # retrieve all key which start with the given substring and are not exactly the substring (sorted by number of occurrences)
-        sorted_counts = sorted([(key, value) for key, value in self.token_counter.items() if key.startswith(query_part) and key is not query_part], reverse= True, key=lambda x: x[1])
+        sorted_counts = sorted([(key, value) for key, value in self.token_counter.items() if key.startswith(query_relevant) and key is not query_relevant], reverse= True, key=lambda x: x[1])
         
         # select the n most common tokens and return them
-        n_results = [token for token, count in sorted_counts[0:n]]
+        n_results = [query_prior + " " + token for token, count in sorted_counts[0:n]]
         return n_results
 
 
@@ -71,7 +73,7 @@ class Word_Completer():
             self.token_counter = dill.load(file)
 
 
-
+'''
 # Set path as needed for Query_Completer class
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -100,5 +102,5 @@ print(f"One prediction took: {time.time() - begin}")
 print(wc.predict_token("World qua",n))
 print(wc.predict_token("Oop",n))
 print(wc.predict_token("Rip",n))
-print(wc.predict_token("quat",n))
+print(wc.predict_token("quat",n))'''
 
