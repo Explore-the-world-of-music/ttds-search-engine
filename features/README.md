@@ -37,6 +37,46 @@ print(qc.predict_next_token("Oops I"))
 print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 # Output: ['Es ragen aus ihrem aufgeschlitzten Bauch rippen'] <- "aufgeschlitzten Bauch" only occured in this context and wont be part of the model after reduction
 ```
+---
+
+## Word Completion (word_completion.py)
+This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole query with the five most probable completed tokens. The pretrained model is available for download [here](https://www.dropbox.com/s/bgifg45sbe3jbgl/wc_model.pkl?dl=0) and can be loaded using the `load_model` function.
+
+The class `Query_Completer` needs the parameter for `n` for initialization (n=3 in the current case).
+
+### Important Functions for Connection
+- `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
+- `save_model(model_filepath = "wc_model.pkl")` saves the models in a pickle file
+- `load_model(model_filepath = "wc_model.pkl")` restores the models from a pickle file
+- `predict_token(query, n)` predicts the `n` most probable words for the last splittable token
+
+### Examples
+```Py
+data = pd.read_csv("data-song-sample.csv") # Load the provided data
+
+# Instanciate the model
+wc = Word_Completer()
+
+# Add all Lyrics to the model
+for idx, row in data.iterrows():
+    wc.add_single_lyric(row["SongLyrics"])
+
+# Saving and reloading of the model
+qc.save_model()
+qc.load_model()
+
+# Predicting
+n = 5
+print(wc.predict_token("Hell",n))
+# Output: ['hell', 'hello', 'hella', 'hells', 'hellish']
+print(wc.predict_token("Oop",n))
+# Output: [' oops', ' oop', ' oopsie', ' oopsy', ' oopiri']
+print(wc.predict_token("World qua",n)) # In this case, only the last word is completed and appended to the former words
+# Output: ['world quand', 'world quando', 'world quarter', 'world quanto', 'world qua']
+
+```
+
+---
 
 ## Recommendation Module (recommender.py)
 This module trains and staores a Doc2Vec model to predict the most similar lyrics of a given song. The class `RecommendationEngine` contains the model and a dictionary of the contained Song IDs. The trained [model](https://www.dropbox.com/s/lxuhrvcagd74d5t/word2vec2.model?dl=1) and the [Song ID dictionary](https://www.dropbox.com/s/c6matnwruuxujx9/rec_model.pkl?dl=1) are available for download .
