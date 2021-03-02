@@ -10,14 +10,20 @@ from nltk.stem import PorterStemmer
 
 class Query_Completer():
     def __init__(self, n):
+        """
+        Initializes the Query_Completer class
+
+        :param n: indicating the type of the ngram (n=3 --> trigram) (int)
+        """
         self.n = n
-        self.model = defaultdict(dict)
+        self.model = defaultdict(dict) # model where the ngrams are stored (dict)
 
-        self.last_mapping = -1
-        self.mapping_to_int = {}
+        # Mapping Dictionaries
+        self.mapping_to_int = {}    
         self.mapping_to_token = {}
+        self.last_mapping = -1 # Indicator which is the last mapping assigned to a token
 
-        self.stemmer = PorterStemmer()
+        self.stemmer = PorterStemmer() # Stemmer to stem identificators
 
     def tokenize_lyrics(self, lyrics):
         """
@@ -143,67 +149,78 @@ class Query_Completer():
         results = dict(self.model[tuple(query_mapping)]) # returns the relevant dict of the model
         
         # Sorts the keys by the value and returns them with the most probable word in the first position
-        # TODO: Solve return of None which is currently just parsed into a string
-        sorted_result = [current_query + " " + str(self.mapping_to_token[int_map]) for int_map, v in sorted(results.items(), key=lambda item: item[1],reverse = True)[0:5]]        
+        sorted_result = [current_query + " " + self.mapping_to_token[int_map] for int_map, v in sorted(results.items(), key=lambda item: item[1],reverse = True)[0:5]]        
         return sorted_result
 
 
-    def save_model(self, filepath):
+    def save_model(self, model_filepath = "qc_model.pkl", map_to_int_filepath = "qc_map_to_int.pkl", map_to_token_filepath = "qc_map_to_token.pkl"]):
         """
-        Function which saves the current model
+        Function which saved the models in the file
 
-        :param filepath: path to the save location - File has to be of type .pkl  (str)
+        :param model_filepath: Filepath to the model - has to be of type .pkl (str)
+        :param map_to_int_filepath: Filepath to the mapping from token to int - has to be of type .pkl (str)
+        :param map_to_token_filepath: Filepath to the mapping from int to token - has to be of type .pkl (str)
         """
-        with open("qc_model"+".pkl", 'wb') as file:
+        with open(model_filepath, 'wb') as file:
             dill.dump(self.model, file)
 
-        with open("qc_map_to_int"+".pkl", 'wb') as file:
+        with open(map_to_int_filepath, 'wb') as file:
             dill.dump(self.mapping_to_int, file)
 
-        with open("qc_map_to_token"+".pkl", 'wb') as file:
+        with open(map_to_token_filepath, 'wb') as file:
             dill.dump(self.mapping_to_token, file)
 
         
-    def load_model(self, filepath):
+    def load_model(self, model_filepath = "qc_model.pkl", map_to_int_filepath = "qc_map_to_int.pkl", map_to_token_filepath = "qc_map_to_token.pkl"]):
         """
         Function which loades the model in the file
 
-        :param filepath: path to the save location - File has to be of type .pkl  (str)
+        :param model_filepath: Filepath to the model - has to be of type .pkl (str)
+        :param map_to_int_filepath: Filepath to the mapping from token to int - has to be of type .pkl (str)
+        :param map_to_token_filepath: Filepath to the mapping from int to token - has to be of type .pkl (str)
         """
 
-        with open(filepath, 'rb') as file:
+        with open(model_filepath, 'rb') as file:
             self.model = dill.load(file)
 
-        with open("qc_map_to_int"+".pkl", 'rb') as file:
+        with open(map_to_int_filepath, 'rb') as file:
             self.mapping_to_int = dill.load(file)
 
-        with open("qc_map_to_token"+".pkl", 'rb') as file:
+        with open(map_to_token_filepath, 'rb') as file:
             self.mapping_to_token = dill.load(file)
 
         self.last_mapping = max(self.mapping_to_int, key = self.mapping_to_int.get)
 
     def reduce_model(self, cutoff):
+        """
+        Function which reduces the model by removing the identifiers which occured less than 'cutoff' times
+
+        :param cutoff: Number indicating the least amount of occurrences to keep
+        """
         to_delete = []
         for key, subdict in self.model.items():
+
+            # Count how many occurences an identifier has
             count = 0
             for _, cur_count in subdict.items():
                 count += cur_count
 
-            if count <= cutoff:
+            if count < cutoff:
                 to_delete.append(key)
 
+        # Delete the relevant keys from the model
         for key in to_delete:
             del self.model[key]
 
 
-
+'''
 # Set path as needed for Query_Completer class
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 
-'''
+
 qc = Query_Completer(n = 3)
 qc.load_model("qc_new_data_model.pkl")
 print(len(qc.model))
@@ -221,7 +238,7 @@ with open("unique.txt", "w", encoding = "utf-8") as out:
     for i in unique:
         out.write(str(i) + "\n")
 print(len(unique))   
-'''
+
 
 qc = Query_Completer(n = 3)
 
@@ -230,6 +247,8 @@ import pandas as pd
 
 
 qc = Query_Completer(n = 3)
+
+
 data = pd.read_csv("data-song_v1.csv")
 
 begin = time.time()
@@ -247,7 +266,7 @@ print(f"Training and saving took: {time.time() - begin}")
 
 
 # Reload the model and make predictions
-#qc.load_model("qc_model.pkl")
+qc.load_model("qc_model.pkl")
 
 print("Predicting")
 begin = time.time()
@@ -255,10 +274,10 @@ print(qc.predict_next_token("deux trois"))
 print(qc.predict_next_token("Cinq six sept"))
 print(qc.predict_next_token("did it"))
 print(qc.predict_next_token("HALLO I BIMS"))
-print(f"Predicting took: {time.time() - begin}")
-#print(qc.predict_next_token("Oops I"))
-#print(qc.predict_next_token("My loneliness"))
-#print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))'''
+print(qc.predict_next_token("Oops I"))
+print(qc.predict_next_token("My loneliness"))
+print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
+print(f"Prediction took took: {time.time() - begin}")'''
 
 
 
