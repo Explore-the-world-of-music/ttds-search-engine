@@ -32,9 +32,9 @@ class Query_Completer():
         :param lyrics: The lyrics to preprocess (str)
         :return line: Tokenized and lowered list of tokens (list)
         """
-        tokenized = re.findall(r"[\w]+", lyrics)
+        tokenized = re.findall(r"[\w]+", lyrics.lower())
 
-        line = [x.lower() for x in tokenized if x != ""]
+        line = [x for x in tokenized if x != ""]
         return line
 
 
@@ -153,7 +153,7 @@ class Query_Completer():
         return sorted_result
 
 
-    def save_model(self, model_filepath = "qc_model.pkl", map_to_int_filepath = "qc_map_to_int.pkl", map_to_token_filepath = "qc_map_to_token.pkl"]):
+    def save_model(self, model_filepath = "qc_model.pkl", map_to_int_filepath = "qc_map_to_int.pkl", map_to_token_filepath = "qc_map_to_token.pkl"):
         """
         Function which saved the models in the file
 
@@ -171,7 +171,7 @@ class Query_Completer():
             dill.dump(self.mapping_to_token, file)
 
         
-    def load_model(self, model_filepath = "qc_model.pkl", map_to_int_filepath = "qc_map_to_int.pkl", map_to_token_filepath = "qc_map_to_token.pkl"]):
+    def load_model(self, model_filepath = "qc_model.pkl", map_to_int_filepath = "qc_map_to_int.pkl", map_to_token_filepath = "qc_map_to_token.pkl"):
         """
         Function which loades the model in the file
 
