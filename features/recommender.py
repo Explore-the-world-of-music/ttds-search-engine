@@ -34,6 +34,8 @@ class RecommendationEngine():
 
         # Train the model for max_epochs epochs
         for epoch in range(max_epochs):
+            if epoch / (max_epochs/10) == 0:
+                print(f"Epoch {epoch} out of {max_epochs} running.")
             self.model.train(tagged_data,
                         total_examples=self.model.corpus_count,
                         epochs=self.model.epochs)
@@ -112,5 +114,75 @@ class RecommendationEngine():
         with open(filepath_dict, 'rb') as file:
             self.contained_doc_ids = dill.load(file)
 
+'''
+
+# Set path as needed for Preprocessor class
+path = os.path.abspath(__file__)
+dname = os.path.dirname(os.path.dirname(path))
+os.chdir(dname)
 
 
+print(os.getcwd())
+import sys
+sys.path.append(os.getcwd())
+
+from helpers.misc import load_yaml
+from ETL.preprocessing import Preprocessor
+config = load_yaml("config/config.yaml")
+preprocessor = Preprocessor(config)
+
+
+# Train on current data
+import pandas as pd
+data = pd.read_csv(os.path.join("features", "data-song_v1.csv"))
+
+begin = time.time()
+preprocessed_lyrics = [None] * data.shape[0]
+for idx, row in data.iterrows():
+    preprocessed_lyrics[idx] = preprocessor.preprocess(row["SongLyrics"])
+
+ids = list(data["SongID"])
+
+print(f"Data preprocessed in {begin - time.time()}")
+begin = time.time()
+
+rec_eng = RecommendationEngine()
+rec_eng.load_model("word2vec2.model", "rec_model.pkl")
+
+begin = time.time()
+print(rec_eng.find_similar_songs_known_song(724643, 10))
+print(f"Retrieval took: {time.time() - begin}")
+#print(rec_eng.find_similar_songs_known_song(20, 10))
+
+
+#rec_eng.train(preprocessed_lyrics, ids, max_epochs = 50)
+
+#print(f"Engine trained in {begin - time.time()}")
+
+
+
+#strg = preprocessor.preprocess("I've forgotten all the rest")
+#print(rec_eng.find_similar_songs_unknown_song(strg, 3))
+#begin = time.time()
+#rec_eng.save_model("word2vec2.model", "rec_model.pkl")
+#print(f"Model saved in {begin - time.time()}")
+
+#rec_eng.load_model("word2vec2.model", "rec_model.pkl")
+#print(rec_eng.contained_doc_ids)
+#print(rec_eng.find_similar_songs_known_song(3, 1))
+
+
+
+
+data = [["i","love","machine","learning.","its","awesome."],["i","love","coding","in","python"],["love","building","chatbots"],["chat","amagingly","well"]]
+ids = [1,2,3,4]
+
+rec_eng = RecommendationEngine()
+rec_eng.train(data, ids, max_epochs = 10)
+
+print(rec_eng.find_similar_songs_known_song(1, 1))
+print(rec_eng.find_similar_songs_unknown_song(["i", "love", "chatbots"], 1))
+
+rec_eng.save_model("word2vec2.model")
+rec_eng.load_model("word2vec2.model")
+print(rec_eng.find_similar_songs_known_song(1, 1))'''

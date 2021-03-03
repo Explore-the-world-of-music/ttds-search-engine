@@ -79,7 +79,7 @@ print(wc.predict_token("World qua",n)) # In this case, only the last word is com
 ---
 
 ## Recommendation Module (recommender.py)
-This module trains and staores a Doc2Vec model to predict the most similar lyrics of a given song. The class `RecommendationEngine` contains the model and a dictionary of the contained Song IDs. The trained [model](https://www.dropbox.com/s/lxuhrvcagd74d5t/word2vec2.model?dl=1) and the [Song ID dictionary](https://www.dropbox.com/s/c6matnwruuxujx9/rec_model.pkl?dl=1) are available for download .
+This module trains and staores a Doc2Vec model to predict the most similar lyrics of a given song. The class `RecommendationEngine` contains the model and a dictionary of the contained Song IDs. The trained [model](https://www.dropbox.com/sh/p9kpfo843mftoz6/AABBaIezWkNlNshhOx6OyZkNa?dl=0) is available for download .
 
 ### Important Functions for Connection
 - `save_model(filepath_model, filepath_dict)` saves the model in a .model and the Song ID dictionary in a pickle file
