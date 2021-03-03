@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 import pandas as pd
 import datetime
 import os
+import time
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -18,14 +19,21 @@ os.chdir(dname)
 
 class Additional_Song_Data_Scraper():
     def __init__(self):
-        self.percent_labels = ["Acousticness", "Energy", "Liveness", "Speachiness", "Daneability", "Instrumentalness", "Loudness", "Valence"]# do not change
+        #self.percent_labels = ["Acousticness", "Energy", "Liveness", "Speachiness", "Daneability", "Instrumentalness", "Loudness", "Valence"]# do not change
         self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.basic_search_url = "https://songdata.io/search"
-        self.wait_seconds = 5
+        self.wait_seconds = 1
         self.song_data_list = []
         self.unresolved_exceptions = 0
 
     def search_song(self, search_string, song_id, first_try = True):
+        '''
+        This function searches for a string on the songdata.io and appends the results to self.song_data_list
+
+        :param search_string - string to search for on songdata.io (str)
+        :param song_id - id with which the new data get saved (int)
+        :param first_try - indicator for the recursive retry if information retrieval failed (bool)
+        '''
 
         # Initialize Driver
         self.driver.get(self.basic_search_url)
@@ -62,32 +70,48 @@ class Additional_Song_Data_Scraper():
                 self.unresolved_exceptions += 1
                 return
 
-    def date_converter(self, x):
+    def date_converter(self, date):
+        '''
+        Function which tries to convert the date string into a datetime format
+
+        :param date - date from the scraping (str)
+        :return date - converted date (datetime)
+        '''
+
         try:
-            return datetime.datetime.strptime(x, "%B %d, %Y")
+            return datetime.datetime.strptime(date, "%B %d, %Y")
         except:
-            return datetime.datetime.strptime(x, "%Y")
+            return datetime.datetime.strptime(date, "%Y")
 
 
         
 
     def create_dataframe(self):
-        self.df = pd.DataFrame(columns=[
+        '''
+        Creates a dataframe with matching columns for all values in the self.song_data_list
+        '''
+
+        df = pd.DataFrame(columns=[
             "song_id", "key", "camelot", "bpm", "length", "release_date", "time_signature", "loudness_decibel",
             "acousticness", "energy", "liveness", "speachiness", "danceability", "instrumentalness", "loudness", "valence", "url"],
         data=self.song_data_list)
 
-        self.df["loudness_decibel"] = self.df["loudness_decibel"].apply(lambda x: float(x[:-3])) # remove "db" at the end and convert to float
-        self.df["length"] = self.df["length"].apply(lambda x: int(x.split(":")[0])*60 + int(x.split(":")[1])) # Convert 3:31 into 211 seconds
-        self.df["release_date"] = self.df["release_date"].apply(lambda x: self.date_converter(x)) # Convert "3" into 3
+        df["loudness_decibel"] = df["loudness_decibel"].apply(lambda x: float(x[:-3])) # remove "db" at the end and convert to float
+        df["length"] = df["length"].apply(lambda x: int(x.split(":")[0])*60 + int(x.split(":")[1])) # Convert 3:31 into 211 seconds
+        df["release_date"] = df["release_date"].apply(lambda x: self.date_converter(x)) # Convert "3" into 3
 
-        self.df["time_signature"] = self.df["time_signature"].apply(lambda x: int(x)) # Convert "3" into 3
-        self.df["bpm"] = self.df["bpm"].apply(lambda x: int(x)) # Convert "3" into 3
+        df["time_signature"] = df["time_signature"].apply(lambda x: int(x)) # Convert "3" into 3
+        df["bpm"] = df["bpm"].apply(lambda x: int(x)) # Convert "3" into 3
 
-        return self.df
+        return df
 
-    def save_dataframe(self):
-        self.df.to_csv(path_or_buf = "additional_song_data.csv", index=False, encoding = "utf-8")
+    def save_new_data(self):
+        '''
+        Loads the existing csv, appends the new data, saves the df and clears the self.song_data_list
+        '''
+        df = pd.read_csv("additional_song_data.csv", encoding = "utf-8").append(self.create_dataframe(), ignore_index = True)
+        df.to_csv(path_or_buf = "additional_song_data.csv", index=False, encoding = "utf-8")
+        self.song_data_list = []
 
 
         '''
@@ -107,16 +131,21 @@ ass = Additional_Song_Data_Scraper()
 
 data = pd.read_csv("data-song_v1.csv")
 data = data[0:50]
+modulo = 10
+currently_unresolved = 0
 
+begin = time.time()
 for ids, (idx, row) in enumerate(data.iterrows()):
-    if ids%1000 == 0:
-        print(f"{ids} out of {data.shape[0]} have been scraped and {ass.unresolved_exceptions} unresolved exceptions have occures")
+    if ids%modulo == 0 and ids != 0:
+        print(f"Saving Version {ids/modulo}", end = "\r")
+        ass.save_new_data()
+        print(f"v{ids/modulo}: {ids}/{data.shape[0]} !{ass.unresolved_exceptions-currently_unresolved}/{ass.unresolved_exceptions} - time for {modulo} songs: {time.time() - begin}")
+        currently_unresolved = ass.unresolved_exceptions
+        begin = time.time()
 
     ass.search_song(row["SongTitle"] + " " + row["ArtistMain"], row["SongID"])
 
-df = ass.create_dataframe()
-ass.save_dataframe()
-
+ass.save_new_data()
 
 
 # Close the driver session
