@@ -23,10 +23,9 @@ class Additional_Song_Data_Scraper():
         self.basic_search_url = "https://songdata.io/search"
         self.wait_seconds = 5
         self.song_data_list = []
+        self.unresolved_exceptions = 0
 
-    def search_song(self, search_string, song_id):
-
-        first_retry = True
+    def search_song(self, search_string, song_id, first_try = True):
 
         # Initialize Driver
         self.driver.get(self.basic_search_url)
@@ -42,24 +41,35 @@ class Additional_Song_Data_Scraper():
         try:
             WebDriverWait(self.driver, self.wait_seconds).until(
                 EC.element_to_be_clickable((By.XPATH, '//tr[(((count(preceding-sibling::*) + 1) = 1) and parent::*)]//a'))).click() # First found result
-        except TimeoutException:
-            print("exception")
-            if first_retry:
-                self.search_song(search_string, song_id)
+
+
+            # Find and scrap Key, Camlelot, BPM, Length, Release Data, Time Signature and Loudness
+            WebDriverWait(self.driver, self.wait_seconds).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#loudness")))
+            basic_infos = [element.text for element in self.driver.find_elements_by_css_selector('#loudness .text-white+ .text-white , #time .text-white+ .text-white , .display-4.mb-0 , .display-4.mb-0 , #release .text-white+ .text-white , #length .text-white+ .text-white')]
+
+            # Receive the given percentages of the Song Analysis
+            percentages = [int(element.text[:-1]) for element in self.driver.find_elements_by_css_selector('span')[3:]]
+            url = self.driver.current_url
+
+            # Song_id, Key, Camlelot, BPM, Length, Release Data, Time Signature, Loudness, 8x Song Analytics, Url
+            current_song_data = [song_id] + basic_infos + percentages + [url]
+            self.song_data_list.append(current_song_data)
+        except:
+            #print(f"Exception for {song_id}")
+            if first_try:
+                self.search_song(search_string, song_id, first_try = False)
             else:
+                self.unresolved_exceptions += 1
                 return
 
-        # Find and scrap Key, Camlelot, BPM, Length, Release Data, Time Signature and Loudness
-        WebDriverWait(self.driver, self.wait_seconds).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#loudness")))
-        basic_infos = [element.text for element in self.driver.find_elements_by_css_selector('#loudness .text-white+ .text-white , #time .text-white+ .text-white , .display-4.mb-0 , .display-4.mb-0 , #release .text-white+ .text-white , #length .text-white+ .text-white')]
+    def date_converter(self, x):
+        try:
+            return datetime.datetime.strptime(x, "%B %d, %Y")
+        except:
+            return datetime.datetime.strptime(x, "%Y")
 
-        # Receive the given percentages of the Song Analysis
-        percentages = [int(element.text[:-1]) for element in self.driver.find_elements_by_css_selector('span')[3:]]
-        url = self.driver.current_url
 
-        # Song_id, Key, Camlelot, BPM, Length, Release Data, Time Signature, Loudness, 8x Song Analytics, Url
-        current_song_data = [song_id] + basic_infos + percentages + [url]
-        self.song_data_list.append(current_song_data)
+        
 
     def create_dataframe(self):
         self.df = pd.DataFrame(columns=[
@@ -69,7 +79,7 @@ class Additional_Song_Data_Scraper():
 
         self.df["loudness_decibel"] = self.df["loudness_decibel"].apply(lambda x: float(x[:-3])) # remove "db" at the end and convert to float
         self.df["length"] = self.df["length"].apply(lambda x: int(x.split(":")[0])*60 + int(x.split(":")[1])) # Convert 3:31 into 211 seconds
-        self.df["release_date"] = self.df["release_date"].apply(lambda x: datetime.datetime.strptime(x, "%B %d, %Y")) # Convert "3" into 3
+        self.df["release_date"] = self.df["release_date"].apply(lambda x: self.date_converter(x)) # Convert "3" into 3
 
         self.df["time_signature"] = self.df["time_signature"].apply(lambda x: int(x)) # Convert "3" into 3
         self.df["bpm"] = self.df["bpm"].apply(lambda x: int(x)) # Convert "3" into 3
@@ -90,12 +100,22 @@ class Additional_Song_Data_Scraper():
 
 
 ass = Additional_Song_Data_Scraper()
-ass.search_song("Britney Oops", 10)
-ass.search_song("Aqua Barbie Girl", 512)
+#ass.search_song("Britney Oops", 10)
+#ass.search_song("Aqua Barbie Girl", 512)
+#df = ass.create_dataframe()
+#ass.save_dataframe()
+
+data = pd.read_csv("data-song_v1.csv")
+data = data[0:50]
+
+for ids, (idx, row) in enumerate(data.iterrows()):
+    if ids%1000 == 0:
+        print(f"{ids} out of {data.shape[0]} have been scraped and {ass.unresolved_exceptions} unresolved exceptions have occures")
+
+    ass.search_song(row["SongTitle"] + " " + row["ArtistMain"], row["SongID"])
+
 df = ass.create_dataframe()
 ass.save_dataframe()
-
-
 
 
 
