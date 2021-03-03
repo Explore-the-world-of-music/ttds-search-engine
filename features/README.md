@@ -42,8 +42,6 @@ print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 ## Word Completion (word_completion.py)
 This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole query with the five most probable completed tokens. The pretrained model is available for download [here](https://www.dropbox.com/s/bgifg45sbe3jbgl/wc_model.pkl?dl=0) and can be loaded using the `load_model` function.
 
-The class `Query_Completer` needs the parameter for `n` for initialization (n=3 in the current case).
-
 ### Important Functions for Connection
 - `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
 - `save_model(model_filepath = "wc_model.pkl")` saves the models in a pickle file
