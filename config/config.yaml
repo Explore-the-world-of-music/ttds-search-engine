@@ -1,6 +1,6 @@
 preprocessing:
   use_stemming: True
-  remove_stop_words: False
+  remove_stop_words: True
   use_replacement_patterns: True
 retrieval:
   number_ranked_documents: 150
