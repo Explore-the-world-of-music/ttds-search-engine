@@ -240,17 +240,15 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
 
             if df > 0:
                 # Extract the query component frequencies but only for the RELEVANT documents
-                tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in tfs_docs[query_component]["tfs_docs"].keys() if key in rel_docs]
+                tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in rel_docs_all if key in rel_docs]
 
-                if total_num_docs == df:
-                    weights_docs = [(1 + np.log10(tf)) * 1 for tf in tfs_docs_all]
-                else:
-                    # Sum over all relevant documents
-                    weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs_all]
+                # Sum over all relevant documents
+                weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs_all]
             else:
                 weights_docs = []
 
-            for doc_id, weight in zip(rel_docs, weights_docs):
+            rel_docs_fin = [doc_id for doc_id in rel_docs_all if doc_id in rel_docs]
+            for doc_id, weight in zip(rel_docs_fin, weights_docs):
                 if doc_id not in doc_relevance:
                     doc_relevance[doc_id] = weight
                 else:
@@ -298,6 +296,8 @@ def execute_search(query, indexer, preprocessor):
 
     # check if boolean search
     if bool_pattern.search(query) is not None:
+
+        print(query)
 
         type_of_bool_search = bool_pattern.findall(query)
         for idx, item in enumerate(type_of_bool_search):
