@@ -44,6 +44,7 @@ This module trains and stores an ngram model to predict the next word from an in
 
 ### Important Functions for Connection
 - `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
+- `add_lyrics_linewise(lyrics)` adds the lines of a new unprocessed lyric (str) to the model - additional ngrams [None, None, "New"] --> New York
 - `save_model(model_filepath = "wc_model.pkl")` saves the models in a pickle file
 - `load_model(model_filepath = "wc_model.pkl")` restores the models from a pickle file
 - `predict_token(query, n)` predicts the `n` most probable words for the last splittable token
