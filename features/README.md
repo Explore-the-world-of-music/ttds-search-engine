@@ -6,6 +6,7 @@ The class `Query_Completer` needs the parameter for `n` for initialization (n=3 
 
 ### Important Functions for Connection
 - `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
+- `add_lyrics_linewise(lyrics)` adds the lines of a new unprocessed lyric (str) to the model - additional ngrams [None, None, "New"] --> New York
 - `save_model(model_filepath, map_to_int_filepath, map_to_token_filepath)` saves the models in pickle files - default values exist
 - `load_model(model_filepath, map_to_int_filepath, map_to_token_filepath)` restores the models from pickle files - default values exist
 - `predict_next_token(current_query)` predicts the five most probable continuations for a unprocessed query based on the last n-1 tokens of the query
@@ -44,7 +45,6 @@ This module trains and stores an ngram model to predict the next word from an in
 
 ### Important Functions for Connection
 - `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
-- `add_lyrics_linewise(lyrics)` adds the lines of a new unprocessed lyric (str) to the model - additional ngrams [None, None, "New"] --> New York
 - `save_model(model_filepath = "wc_model.pkl")` saves the models in a pickle file
 - `load_model(model_filepath = "wc_model.pkl")` restores the models from a pickle file
 - `predict_token(query, n)` predicts the `n` most probable words for the last splittable token
