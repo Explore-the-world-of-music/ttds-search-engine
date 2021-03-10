@@ -103,6 +103,19 @@ class Query_Completer():
             self.add_single_lyric(lyrics)
 
 
+    def add_lyrics_linewise(self, lyrics):
+        '''
+        Function which splits the lyrics into sepetate lines and passes it to add_single_lyric(line)
+        :param lyrics: The lyrics (str)
+        '''
+
+        # Create "own" documents for each line
+        splitted_lines = [line for line in lyrics.split("\n") if line]
+        print(splitted_lines)
+        for line in splitted_lines:
+            self.add_single_lyric(line)
+
+
     def predict_next_token(self, current_query):
         """
         Function which returns most probable next words based on the model
@@ -232,31 +245,25 @@ import pandas as pd
 
 qc = Query_Completer(n = 3)
 
-
 data = pd.read_csv("data-song_v1.csv")
 data = data[0:10]
-
-print(data["SongID"].values)
 
 for ids, (idx, row) in enumerate(data.iterrows()):
     if ids%1000 == 0:
         print(f"{ids} out of {data.shape[0]}", end='\r')
-    qc.add_single_lyric(row["SongLyrics"])
-
-
-#print(qc.model)
+    qc.add_lyrics_linewise(row["SongLyrics"])
 
 print("Predicting")
 begin = time.time()
 print(qc.predict_next_token("In"))
 print(qc.predict_next_token("Cinq six sept"))
 print(qc.predict_next_token("to shame"))
-print(qc.predict_next_token("HALLO I BIMS"))
-print(qc.predict_next_token("Oops I"))
-print(qc.predict_next_token("My loneliness"))
-print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
+print(qc.predict_next_token("New"))
+# print(qc.predict_next_token("Oops I"))
+# print(qc.predict_next_token("My loneliness"))
+# print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 print(f"Prediction took took: {time.time() - begin}")
-
+'''
 
 
 
@@ -296,4 +303,3 @@ print(f"Prediction took took: {time.time() - begin}")
 # print(qc.predict_next_token("My loneliness"))
 # print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 # print(f"Prediction took took: {time.time() - begin}")
-'''
