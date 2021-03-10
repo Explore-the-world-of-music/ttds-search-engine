@@ -118,7 +118,6 @@ class Query_Completer():
 
         elif len(query_token_list) < self.n-1:
             # If not enough tokens in query add padding and predict token
-
             num_difference = self.n-1 - len(query_token_list)
             last_m_tokens = [None] * num_difference + query_token_list
 
@@ -134,11 +133,17 @@ class Query_Completer():
                 query_mapping[idx] = self.mapping_to_int[q_token]
             except KeyError:
                 continue
-
+        
         results = dict(self.model[tuple(query_mapping)]) # returns the relevant dict of the model
         
         # Sorts the keys by the value and returns them with the most probable word in the first position
-        sorted_result = [current_query + " " + self.mapping_to_token[int_map] for int_map, v in sorted(results.items(), key=lambda item: item[1],reverse = True)[0:5]]        
+        sorted_result = []
+        for int_map, _ in sorted(results.items(), key=lambda item: item[1],reverse = True):
+            if int_map != 0: # Not None
+                sorted_result.append([current_query + " " + self.mapping_to_token[int_map]]) 
+            if len(sorted_result) == 5:
+                break
+
         return sorted_result
 
 
@@ -245,7 +250,7 @@ print("Predicting")
 begin = time.time()
 print(qc.predict_next_token("In"))
 print(qc.predict_next_token("Cinq six sept"))
-print(qc.predict_next_token("did it"))
+print(qc.predict_next_token("to shame"))
 print(qc.predict_next_token("HALLO I BIMS"))
 print(qc.predict_next_token("Oops I"))
 print(qc.predict_next_token("My loneliness"))
@@ -291,3 +296,4 @@ print(f"Prediction took took: {time.time() - begin}")
 # print(qc.predict_next_token("My loneliness"))
 # print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 # print(f"Prediction took took: {time.time() - begin}")
+'''
