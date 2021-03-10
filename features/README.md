@@ -1,11 +1,12 @@
 # Feature Documentation
 ## Query Completion (ngram_model.py)
-This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model and the relevant mappings for our data is available for download [here](https://www.dropbox.com/sh/hmpphonwiyxyc0q/AADCzZIz2Aa6I93NPQycLlQoa?dl=0) and can be loaded using the `load_model` function.
+This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model and the relevant mappings for our data is available for download [here](https://www.dropbox.com/sh/sr0ypvx2t1t31cp/AAAyQUq36VYczKIyJPeLlAQRa?dl=0) and can be loaded using the `load_model` function.
 
 The class `Query_Completer` needs the parameter for `n` for initialization (n=3 in the current case).
 
 ### Important Functions for Connection
 - `add_single_lyric(lyrics)` adds a new unprocessed lyric (str) to the model
+- `add_lyrics_linewise(lyrics)` adds the lines of a new unprocessed lyric (str) to the model - additional ngrams [None, None, "New"] --> New York
 - `save_model(model_filepath, map_to_int_filepath, map_to_token_filepath)` saves the models in pickle files - default values exist
 - `load_model(model_filepath, map_to_int_filepath, map_to_token_filepath)` restores the models from pickle files - default values exist
 - `predict_next_token(current_query)` predicts the five most probable continuations for a unprocessed query based on the last n-1 tokens of the query
