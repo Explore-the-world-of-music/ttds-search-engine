@@ -111,7 +111,6 @@ class Query_Completer():
 
         # Create "own" documents for each line
         splitted_lines = [line for line in lyrics.split("\n") if line]
-        print(splitted_lines)
         for line in splitted_lines:
             self.add_single_lyric(line)
 
@@ -236,7 +235,7 @@ class Query_Completer():
             del self.mapping_to_token[x]
 
 
-'''
+
 # Set path as needed for Query_Completer class
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -246,12 +245,36 @@ import pandas as pd
 qc = Query_Completer(n = 3)
 
 data = pd.read_csv("data-song_v1.csv")
-data = data[0:10]
 
+begin = time.time()
 for ids, (idx, row) in enumerate(data.iterrows()):
     if ids%1000 == 0:
         print(f"{ids} out of {data.shape[0]}", end='\r')
     qc.add_lyrics_linewise(row["SongLyrics"])
+
+
+qc.save_model(model_filepath = "qc_model_untrimmed.pkl", map_to_int_filepath = "qc_map_to_int_untrimmed.pkl", map_to_token_filepath = "qc_map_to_token.pkl_untrimmed")
+
+print(f"Training and saving took: {time.time() - begin}")
+
+from twilio.rest import Client
+import os
+
+account_sid = "ACb6a955fcf2a50bea609380af8b72a928"
+auth_token  = "51600f32cb0cbbb690225693ffd6d285"
+
+client = Client(account_sid, auth_token)
+
+from_whatsapp_number = 'whatsapp:+14155238886'
+to_whatsapp_number = 'whatsapp:+4917693183592'
+
+client.messages.create(body = f"Model Trained after {time.time() - begin}", from_ = from_whatsapp_number, to=to_whatsapp_number)
+
+
+qc.reduce_model(5)
+qc.save_model()
+
+qc.load_model()
 
 print("Predicting")
 begin = time.time()
@@ -259,13 +282,11 @@ print(qc.predict_next_token("In"))
 print(qc.predict_next_token("Cinq six sept"))
 print(qc.predict_next_token("to shame"))
 print(qc.predict_next_token("New"))
-# print(qc.predict_next_token("Oops I"))
-# print(qc.predict_next_token("My loneliness"))
-# print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
+print(qc.predict_next_token("Oops I"))
+print(qc.predict_next_token("Oops"))
+print(qc.predict_next_token("My loneliness"))
+print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 print(f"Prediction took took: {time.time() - begin}")
-'''
-
-
 
 # Set path as needed for Query_Completer class
 # abspath = os.path.abspath(__file__)
