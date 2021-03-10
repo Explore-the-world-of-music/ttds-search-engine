@@ -235,7 +235,7 @@ class Query_Completer():
             del self.mapping_to_token[x]
 
 
-
+'''
 # Set path as needed for Query_Completer class
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -287,6 +287,8 @@ print(qc.predict_next_token("Oops"))
 print(qc.predict_next_token("My loneliness"))
 print(qc.predict_next_token("Es ragen aus ihrem aufgeschlitzten Bauch"))
 print(f"Prediction took took: {time.time() - begin}")
+
+'''
 
 # Set path as needed for Query_Completer class
 # abspath = os.path.abspath(__file__)
