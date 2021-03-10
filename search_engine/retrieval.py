@@ -6,6 +6,7 @@ import re
 from helpers.misc import create_default_dict_list
 import numpy as np
 from operator import itemgetter
+import pandas as pd
 
 
 def find_docs_with_term(term, index):
@@ -458,4 +459,15 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
             for doc_id, value in rel_docs_with_tfidf_scaled:
                 results += f"{query_num},{doc_id},{round(value, 4)}\n"
 
-            return results
+            if config["retrieval"]["perform_system_evaluation"]:
+                doc_number = [x[0] for x in rel_docs_with_tfidf_scaled]
+                rank_of_doc = np.arange(1, len(doc_number) +1)
+                score = [x[1] for x in rel_docs_with_tfidf_scaled]
+                query_number =  [query_num] * len(doc_number)
+
+                results_frame = pd.DataFrame({"query_number":query_number,"doc_number":doc_number,"rank_of_doc":rank_of_doc,
+                                              "score":score})
+            else:
+                results_frame = pd.DataFrame()
+
+            return results, results_frame
