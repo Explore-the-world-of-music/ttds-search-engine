@@ -3,5 +3,5 @@ preprocessing:
   remove_stop_words: True
   use_replacement_patterns: True
 retrieval:
-  number_ranked_documents: 10
+  number_ranked_documents: 150
   perform_system_evaluation: True
