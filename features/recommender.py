@@ -103,7 +103,7 @@ class RecommendationEngine():
         return artist_df["id"].sample(n = 1).values
 
 
-    def train(self, to_predict_list, plain_df, n = 5, threshold = 0.4):
+    def train(self, to_predict_list, plain_df, n = 5):
         '''
         trains the recommendation engine for the IDs to predict
 
@@ -223,7 +223,7 @@ class RecommendationEngine():
             self.recommendation = dill.load(file)
 
 
-    def save_mode_to_csv(self, csv_filepath = 'recommendations.csv'):
+    def save_model_to_csv(self, csv_filepath = 'recommendations.csv'):
         '''
         Saves the recommendation dictionary to a csv
 
@@ -285,7 +285,7 @@ rec_engine.train(to_predict_list=song_ids, plain_df=plain_df)
 print(f"Training took: {time.time() - begin}")
 rec_engine.save_model()
 
-rec_engine.save_mode_to_csv()
+rec_engine.save_model_to_csv()
 
 rec_engine.load_model()
 
