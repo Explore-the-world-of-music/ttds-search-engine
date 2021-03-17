@@ -1,6 +1,6 @@
 # Feature Documentation
 ## Query Completion (ngram_model.py)
-This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model and the relevant mappings for our data is available for download [here](https://www.dropbox.com/sh/hmpphonwiyxyc0q/AADCzZIz2Aa6I93NPQycLlQoa?dl=0) and can be loaded using the `load_model` function.
+This module trains and stores an ngram model to predict the next word from an inputted query. It returns the whole sentence with the five most probable continuations. The pretrained model and the relevant mappings for our data is available for download [here](https://www.dropbox.com/sh/sr0ypvx2t1t31cp/AAAyQUq36VYczKIyJPeLlAQRa?dl=0) and can be loaded using the `load_model` function.
 
 The class `Query_Completer` needs the parameter for `n` for initialization (n=3 in the current case).
 
