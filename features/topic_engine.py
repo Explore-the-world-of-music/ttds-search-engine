@@ -53,13 +53,16 @@ class TopicRecommender():
         return whole_doc_tokens
 
 
-    def train_model(self, whole_doc_tokens):
+    def train(self, plain_df):
         '''
         Trains the LDA model on the provided tokens
 
-        :param whole_doc_tokens: List of Lists containing the preprocessed tokens (list)
+        :param plain_df: Dataframe at least containing the lyrics and the language (DF)
         :param num_topics: Number of topics to predict (int)
         '''
+
+        eng_df = self.cut_down_to_english_songs(plain_df)
+        whole_doc_tokens = self.preprocess_df_lyrics(eng_df)
 
         self.common_dictionary = Dictionary(whole_doc_tokens)
         self.common_corpus = [self.common_dictionary.doc2bow(text) for text in whole_doc_tokens]
@@ -83,23 +86,25 @@ class TopicRecommender():
         return topic
 
 
-    def print_top10_topics_terms(self):
+    def print_top_topics_terms(self, topn = 20):
         '''
         Prints the most probable tokens and the token probabilities  for each topic
+
+        :param topn: Number of the most probable tokens to print (int)
         '''
         for topic_id in range(0, self.num_topics):
-            df_top_10 = pd.DataFrame(columns = ["token", "token_prob"])
+            df_top = pd.DataFrame(columns = ["token", "token_prob"])
 
-            top_10_array = np.array(self.model.get_topic_terms(topicid = topic_id, topn=20))
+            top_array = np.array(self.model.get_topic_terms(topicid = topic_id, topn=topn))
 
-            for idx, (token_id, token_prob) in enumerate(top_10_array):
-                df_top_10.loc[idx,:] = [self.common_dictionary[token_id], np.round(token_prob,4)]
+            for idx, (token_id, token_prob) in enumerate(top_array):
+                df_top.loc[idx,:] = [self.common_dictionary[token_id], np.round(token_prob,4)]
 
             print("Topic: ", topic_id)
-            print(df_top_10)
+            print(df_top)
 
 
-    def save_model(self, model_name= "lda_model"):
+    def save(self, model_name= "lda_model"):
         '''
         Saves the model
 
@@ -109,7 +114,7 @@ class TopicRecommender():
         self.model.save(model_name)
 
 
-    def load_model(self, model_name= "lda_model"):
+    def load(self, model_name= "lda_model"):
         '''
         Loads the model
 
@@ -121,11 +126,11 @@ class TopicRecommender():
 
 
 
-
+'''
 
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 stemmer = PorterStemmer()
 stop_set = stopwords.words('english')
 
-topic_recommender = TopicRecommender(stemmer, stop_set)
+topic_recommender = TopicRecommender(stemmer, stop_set)'''
