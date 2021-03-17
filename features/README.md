@@ -113,3 +113,39 @@ print(rec_engine.get_recommendation(song_id = 168861, n = 5))
 # Output: [137760, 137761, 461554, 498408, 479446]
 ```
 
+
+
+
+
+# LDA Topic Module (topic_engine.py)
+
+The Topic Module trains a LDA Model on the available training data and creates `num_topics` number of topics. If further can predict the topic for an unseen document. The trained [model](https://www.dropbox.com/sh/ba5fdchl1p4cfi2/AAD4wQlOuXCmOM9FDhjrAkkia?dl=0) is available for download .
+
+### Important Functions for Connection 
+
+- `train(self, plain_df)` Trains the LDA model on the provided tokens
+- `predict_topic_for_single_lyrics(self, lyrics)` Predicts the topic ID for a single lyrics string
+- `print_top10_topics_terms(self, topn)` Prints the `topn` most probable tokens and the token probabilities  for each topic
+
+
+```Py
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+stemmer = PorterStemmer()
+stop_set = stopwords.words('english')
+
+plain_df = pd.read_csv("songs2.csv", encoding = "utf-8")
+
+topic_recommender = TopicRecommender(stemmer, stop_set)
+
+# Train and Save the model
+topic_recommender.train(plain_df)
+topic_recommender.save()
+
+# Load the model and predict a topic
+topic_recommender.load()
+print(predict_topic_for_single_lyrics(lyrics = "Oops, I did it again!"))
+# Output: 1
+
+
+```
