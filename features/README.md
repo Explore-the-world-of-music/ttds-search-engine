@@ -98,6 +98,8 @@ rec_engine = RecommendationEngine(lyrics_similarity_calculator)
 plain_df = pd.read_csv("songs2.csv", encoding = "utf-8")
 song_ids = plain_df["id"].values
 
+rec_engine.train(to_predict_list=song_ids, plain_df=plain_df)
+
 # Saving the model in two ways
 rec_engine.save_model() #pkl dict
 rec_engine.save_model_to_csv() # csv
