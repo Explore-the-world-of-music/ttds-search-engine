@@ -379,9 +379,10 @@ def execute_search(query, indexer, preprocessor):
         terms.append(query[pos_bool_old:].strip())
 
         search_results = defaultdict(create_default_dict_list)
-        for term in terms:
-            search_results[term]["rel_docs"], search_results[term]["tfs_docs"] = execute_search(term, indexer,
-                                                                                                preprocessor)
+        for idx, term in enumerate(terms):
+            key = term + "_" + str(idx)
+            search_results[key]["rel_docs"], search_results[key]["tfs_docs"] = execute_search(term, indexer,
+                                                                                              preprocessor)
 
         rel_docs = bool_search(search_results, indexer=indexer, bool_vals=type_of_bool_search)
         tfs_docs = get_tfs_docs_bool_search(search_results, bool_vals=type_of_bool_search, indexer=indexer)
