@@ -76,7 +76,7 @@ def get_tfs_docs_bool_search(search_results, bool_vals, indexer):
     """
     terms = list(search_results.keys())
     # Extract tfs for the first term as basis
-    tfs_docs = search_results.copy()
+    tfs_docs = copy.deepcopy(search_results)
 
     for idx, bool_val in enumerate(bool_vals):
 
@@ -84,13 +84,13 @@ def get_tfs_docs_bool_search(search_results, bool_vals, indexer):
 
         if bool_val == "&&--":
             # Delete this query component as it adds no information about relevance of the individual query components
-            del tfs_docs[terms[idx+1]]
+            del tfs_docs[terms[idx + 1]]
 
         elif bool_val == "||--":
             # Todo: Note improvement and correction here
             # Here we need to inverse the logic and return the documents that do not contain the term
             # rel_docs_new = sorted(set([doc_id for doc_id in indexer.all_doc_ids if doc_id not in tfs_docs[terms[idx + 1]]["rel_docs"]]))
-            rel_docs_new = sorted(set(indexer.all_doc_ids) - set(tfs_docs[terms[idx + 1]]["rel_docs"]))
+            rel_docs_new = list(set(indexer.all_doc_ids) - set(tfs_docs[terms[idx + 1]]["rel_docs"]))
 
             # As this represents only a weak search results, the term frequency is set to 0.5 as documents
             # that have true positives should be favored
