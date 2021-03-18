@@ -9,6 +9,7 @@ from operator import itemgetter
 import pandas as pd
 import datetime
 import logging
+import copy
 
 
 def find_docs_with_term(term, index):
@@ -51,10 +52,15 @@ def get_tfs_docs(term, index):
     :param index: Index in which to search (dict)
     :return: term frequencies of term for related doc ids (dict)
     """
-    tfs_docs = index[term].copy()
-    tfs_docs = defaultdict(int, tfs_docs)
-    for doc in tfs_docs.keys():
-        tfs_docs[doc] = len(tfs_docs[doc])
+    if term in index.keys():
+
+        tfs_docs = index[term].copy()
+        tfs_docs = defaultdict(int, tfs_docs)
+        for doc in tfs_docs.keys():
+            tfs_docs[doc] = len(tfs_docs[doc])
+    else:
+        tfs_docs = dict()
+        tfs_docs = defaultdict(int, tfs_docs)
 
     return tfs_docs
 
@@ -183,14 +189,18 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
             # For multiple terms delete all positions which are true across terms
             # Finally take the minimum true positions per term as the number for which the whole
             # phrase or proximity was found in the document
-            for idx in np.arange(len(terms[:-1])-1):
+            dict_candi_fin = copy.deepcopy(dict_candi)
+            for idx in np.arange(len(terms[:-1]) - 1):
+                counter = 0
                 for idx2, candi_1 in enumerate(dict_candi[idx]):
-                    candi_2 = [pos[0] for pos in dict_candi[idx+1]]
+                    candi_2 = [pos[0] for pos in dict_candi[idx + 1]]
                     if candi_1[1] not in candi_2:
-                        del dict_candi[idx][idx2]
-            max_cand = min([len(dict_candi[key]) for key in dict_candi.keys()])
-            for i in np.arange(max_cand):
-                final_rel_doc_ids.append(doc_id)
+                        del dict_candi_fin[idx][idx2 - counter]
+                        counter = counter + 1
+            if len(list(dict_candi_fin.keys())) > 0:
+                max_cand = min([len(dict_candi_fin[key]) for key in dict_candi_fin.keys()])
+                for i in np.arange(max_cand):
+                    final_rel_doc_ids.append(doc_id)
 
     # Convert results to appropriate output format
     tfs_docs = dict(Counter(final_rel_doc_ids))
@@ -208,9 +218,6 @@ def simple_tfidf_search(terms, indexer):
     :param indexer: Class instance for the created index (Indexer)
     :return: Descending sorted pseudo-dictionary with doc_id as key and TF-IDF as value (list)
     """
-
-    TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    print(f'TIMESTAMP = {TIMESTAMP}')
 
     # doc_relevance = {}
     # total_num_docs = len(indexer.all_doc_ids)
@@ -240,8 +247,6 @@ def simple_tfidf_search(terms, indexer):
     #     results_dict = dict(Counter(results_dict) + Counter(d))
     # sorted_relevance_alt = sorted(results_dict.items(), key=lambda x: x[1], reverse=True)
 
-    TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    print(f'TIMESTAMP = {TIMESTAMP}')
 
     doc_relevance = {}
     total_num_docs = len(indexer.all_doc_ids)
@@ -254,14 +259,15 @@ def simple_tfidf_search(terms, indexer):
         # tfs_docs = [len(rel_doc_pos[key]) for key in rel_doc_pos]
         # weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
 
-        logging.info(f'Calculations for {t}')
-        TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        logging.info(f'TIMESTAMP = {TIMESTAMP}')
-
         tfs_docs = get_tfs_docs(t, indexer.index)
         rel_docs = list(tfs_docs.keys())
         df = len(rel_docs)
-        weights_docs = [(1 + np.log10(tfs_docs[key])) * np.log10(total_num_docs / df) for key in rel_docs]
+        if total_num_docs == df:
+            scale = 1
+        else:
+            scale = np.log10(total_num_docs / df)
+
+        weights_docs = [(1 + np.log10(tfs_docs[key])) * scale for key in rel_docs]
 
         for doc_id, weight in zip(rel_docs, weights_docs):
             if doc_id not in doc_relevance:
@@ -270,9 +276,6 @@ def simple_tfidf_search(terms, indexer):
                 doc_relevance[doc_id] += weight
 
     sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
-
-    TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    print(f'TIMESTAMP = {TIMESTAMP}')
 
     return sorted_relevance
 
@@ -288,6 +291,7 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
     :return: Descending sorted dictionary with doc_id as key and TF-IDF as value (dict)
     """
     doc_relevance = {}
+    #total_num_docs = 500000
     total_num_docs = len(indexer.all_doc_ids)
 
     # Split cases for boolean search and searches with only one query component
@@ -295,13 +299,17 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
 
         for query_component in tfs_docs.keys():
             logging.info(f'Calculations for {query_component}')
-            TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            logging.info(f'TIMESTAMP = {TIMESTAMP}')
             # Extract the document frequency for the query component
             rel_docs_all = tfs_docs[query_component]["rel_docs"]
             df = len(rel_docs_all)
 
             if df > 0:
+
+                if total_num_docs == df:
+                    scale = 1
+                else:
+                    scale = np.log10(total_num_docs / df)
+
                 # Todo: Note optimization here
                 # Extract the query component frequencies but only for the RELEVANT documents
                 # tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in rel_docs_all if key in rel_docs]
@@ -309,7 +317,7 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
                 tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in docs_loop]
 
                 # Sum over all relevant documents
-                weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs_all]
+                weights_docs = [(1 + np.log10(tf)) * scale for tf in tfs_docs_all]
             else:
                 docs_loop = []
                 weights_docs = []
@@ -330,12 +338,13 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
 
         # Calculate the weights per document
         if df > 0:
+            scale = np.log10(total_num_docs / df)
             # Please note that the calculation was adjusted to differentiate documents in ranking even if
             # all documents of the collection are part of the relevant documents
             if total_num_docs == df:
                 weights_docs = [(1 + np.log10(tfs_docs[key])) * 1 for key in rel_docs]
             else:
-                weights_docs = [(1 + np.log10(tfs_docs[key])) * (np.log10(total_num_docs / df)) for key in rel_docs]
+                weights_docs = [(1 + np.log10(tfs_docs[key])) * scale for key in rel_docs]
         else:
             weights_docs = []
 
@@ -420,7 +429,6 @@ def execute_search(query, indexer, preprocessor):
                             pos_asterisk.append(idx - len(pos_asterisk))
                     else:
                         pos_asterisk.append(idx - len(pos_asterisk))
-
             terms = [term for term in terms if term != "*"]
         else:
             pos_asterisk = None

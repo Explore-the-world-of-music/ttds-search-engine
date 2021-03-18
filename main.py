@@ -38,13 +38,13 @@ if __name__ == "__main__":
     #indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
 
     # Save index
-    #indexer.store_index()
+    #indexer.store_index(as_pickle=False)
 
     # Add doc ids as index attribute
     indexer.add_all_doc_ids(doc_ids)
 
     # Load index (for testing)
-    indexer.index = indexer.load_index()
+    indexer.index = indexer.load_index(as_pickle=False)
 
     # Load boolean queries
     queries_num, queries = load_queries('queries/queries.boolean.txt')
@@ -132,12 +132,12 @@ if __name__ == "__main__":
             results = results + results_tmp
 
         results_data_frame = results_data_frame.append(results_data_frame_tmp)
-    dummy_correct_results = results_data_frame[["query_number","doc_number","score"]].reset_index(drop = True)
-    dummy_correct_results["relevance"] = [round(x,0) for x in dummy_correct_results["score"]]
-    dummy_correct_results.drop(columns = ["score"],inplace=True)
-    dummy_correct_results.to_csv("correct_search_results.csv", index = False)
 
     if config["retrieval"]["perform_system_evaluation"]:
+        dummy_correct_results = results_data_frame[["query_number", "doc_number", "score"]].reset_index(drop=True)
+        dummy_correct_results["relevance"] = [round(x, 0) for x in dummy_correct_results["score"]]
+        dummy_correct_results.drop(columns=["score"], inplace=True)
+        dummy_correct_results.to_csv("correct_search_results.csv", index=False)
         print("Perform system evaluation")
         df_correct_search_results = pd.read_csv("correct_search_results.csv")
         df_correct_search_results["query_number"] = df_correct_search_results["query_number"].astype(str)
