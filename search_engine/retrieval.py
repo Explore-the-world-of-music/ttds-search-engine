@@ -114,7 +114,7 @@ def bool_search(search_results, indexer, bool_vals):
     """
     terms = list(search_results.keys())
     # Extract relevant documents for the first term as basis for boolean analysis
-    rel_docs = search_results[terms[0]]["rel_docs"].copy()
+    rel_docs = copy.deepcopy(search_results[terms[0]]["rel_docs"])
 
     for idx, bool_val in enumerate(bool_vals):
         if bool_val == "&&":
