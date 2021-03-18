@@ -422,16 +422,18 @@ def execute_search(query, indexer, preprocessor):
                             pos_asterisk.append(idx - len(pos_asterisk))
                     else:
                         pos_asterisk.append(idx - len(pos_asterisk))
+
             terms = [term for term in terms if term != "*"]
         else:
             pos_asterisk = None
 
         search_results = defaultdict(create_default_dict_list)
-        for term in terms:
+        for idx, term in enumerate(terms):
             # Todo: Note optimization here
             # search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
-            search_results[term]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
-            search_results[term]["rel_docs"] = list(search_results[term]["rel_doc_pos"].keys())
+            key = term + "_" + str(idx)
+            search_results[key]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
+            search_results[key]["rel_docs"] = list(search_results[key]["rel_doc_pos"].keys())
 
         if len(search_results.keys()) < 2:
             # Todo: Note optimization here
