@@ -268,7 +268,9 @@ def simple_tfidf_search(terms, indexer):
         #     else:
         #         doc_relevance[doc_id] += weight
 
-    sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
+    sorted_relevance = sorted(doc_relevance.items(), key=lambda x: float(x[0]), reverse=False)
+    sorted_relevance = sorted(sorted_relevance, key=lambda x: x[1], reverse=True)
+
     return sorted_relevance
 
 
@@ -322,7 +324,8 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
                     doc_relevance[doc_id] += weight
 
         # Sort values
-        sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
+        sorted_relevance = sorted(doc_relevance.items(), key=lambda x: float(x[0]), reverse=False)
+        sorted_relevance = sorted(sorted_relevance, key=lambda x: x[1], reverse=True)
     else:
         # Only one search component
         df = len(rel_docs)  # document frequency
@@ -343,7 +346,8 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
             doc_relevance[doc_id] = weight
 
         # Sort values
-        sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
+        sorted_relevance = sorted(doc_relevance.items(), key=lambda x: float(x[0]), reverse=False)
+        sorted_relevance = sorted(sorted_relevance, key=lambda x: x[1], reverse=True)
 
     return sorted_relevance
 
