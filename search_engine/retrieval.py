@@ -283,7 +283,6 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
     :return: Descending sorted dictionary with doc_id as key and TF-IDF as value (dict)
     """
     doc_relevance = {}
-    #total_num_docs = 500000
     total_num_docs = len(indexer.all_doc_ids)
 
     # Split cases for boolean search and searches with only one query component
@@ -291,21 +290,21 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
 
         for query_component in tfs_docs.keys():
             logging.info(f'Calculations for {query_component}')
+            TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            logging.info(f'TIMESTAMP = {TIMESTAMP}')
             # Extract the document frequency for the query component
             rel_docs_all = tfs_docs[query_component]["rel_docs"]
             df = len(rel_docs_all)
 
             if df > 0:
-
+                # Todo: Note optimization here
+                # Extract the query component frequencies but only for the RELEVANT documents
+                # tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in rel_docs_all if key in rel_docs]
                 if total_num_docs == df:
                     scale = 1
                 else:
                     scale = np.log10(total_num_docs / df)
-
-                # Todo: Note optimization here
-                # Extract the query component frequencies but only for the RELEVANT documents
-                # tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in rel_docs_all if key in rel_docs]
-                docs_loop = sorted(list(set(tfs_docs[query_component]["tfs_docs"].keys()).intersection(rel_docs)))
+                docs_loop = list(set(tfs_docs[query_component]["tfs_docs"].keys()).intersection(rel_docs))
                 tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in docs_loop]
 
                 # Sum over all relevant documents
