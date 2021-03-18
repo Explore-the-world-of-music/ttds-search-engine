@@ -35,10 +35,10 @@ if __name__ == "__main__":
     indexer = Indexer(config)
 
     # Build index
-    #indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
+    indexer.build_index(preprocessor, doc_ids, raw_doc_texts)
 
     # Save index
-    #indexer.store_index(as_pickle=False)
+    indexer.store_index(as_pickle=False)
 
     # Add doc ids as index attribute
     indexer.add_all_doc_ids(doc_ids)

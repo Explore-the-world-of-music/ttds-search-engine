@@ -20,4 +20,3 @@
 20 MOUSE
 21 #3000(hound,coconut, catholic, Hound)
 22 #4000(hound,coconut, catholic, Hound, Coconut)
-23 "Abtrust New Thai"

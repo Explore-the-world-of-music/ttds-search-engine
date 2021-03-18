@@ -243,11 +243,7 @@ def simple_tfidf_search(terms, indexer):
             TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S:%f")
             logging.info(f'TIMESTAMP 2 = {TIMESTAMP}')
 
-            if total_num_docs == df:
-                scale = 1
-            else:
-                scale = np.log10(total_num_docs / df)
-
+            scale = np.log10(total_num_docs / df)
             # Todo: Note optimization here
             # weights_docs = [(1 + np.log10(tfs_docs[key])) * scale for key in rel_docs]
             weights_docs = [(1 + np.log10(value)) * scale for key, value in tfs_docs.items()]
@@ -302,10 +298,7 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
                 # Todo: Note optimization here
                 # Extract the query component frequencies but only for the RELEVANT documents
                 # tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in rel_docs_all if key in rel_docs]
-                if total_num_docs == df:
-                    scale = 1
-                else:
-                    scale = np.log10(total_num_docs / df)
+                scale = np.log10(total_num_docs / df)
                 docs_loop = list(set(tfs_docs[query_component]["tfs_docs"].keys()).intersection(rel_docs))
                 tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in docs_loop]
 
@@ -530,9 +523,12 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
             # Rescale the results. For queries with "OR NOT" it can happen that the difference in scores between the
             # documents are very low (0.0001). To interpret results easier we re-scale here based on the highest score
             max_value = max(rel_docs_with_tfidf, key=itemgetter(1))[1]
-            rel_docs_with_tfidf_scaled = list()
-            for idx, _ in enumerate(rel_docs_with_tfidf):
-                rel_docs_with_tfidf_scaled.append((rel_docs_with_tfidf[idx][0], rel_docs_with_tfidf[idx][1] / max_value * 10))
+            if max_value < 0.00001:
+                rel_docs_with_tfidf_scaled = list()
+            else:
+                rel_docs_with_tfidf_scaled = list()
+                for idx, _ in enumerate(rel_docs_with_tfidf):
+                    rel_docs_with_tfidf_scaled.append((rel_docs_with_tfidf[idx][0], rel_docs_with_tfidf[idx][1] / max_value * 10))
 
             # Write output
             for doc_id, value in rel_docs_with_tfidf_scaled:
@@ -542,7 +538,7 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
                 doc_number = [x[0] for x in rel_docs_with_tfidf_scaled]
                 rank_of_doc = np.arange(1, len(doc_number) +1)
                 score = [x[1] for x in rel_docs_with_tfidf_scaled]
-                query_number =  [query_num] * len(doc_number)
+                query_number = [query_num] * len(doc_number)
 
                 results_frame = pd.DataFrame({"query_number":query_number,"doc_number":doc_number,"rank_of_doc":rank_of_doc,
                                               "score":score})

@@ -38,7 +38,7 @@ class Indexer:
         return index
 
     def add_all_doc_ids(self, doc_ids):
-        self.all_doc_ids = [doc_id for doc_id in doc_ids]
+        self.all_doc_ids = [str(doc_id) for doc_id in doc_ids]
 
     def store_index(self, as_pickle=True):
         """
