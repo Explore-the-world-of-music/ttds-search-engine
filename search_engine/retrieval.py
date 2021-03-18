@@ -219,36 +219,7 @@ def simple_tfidf_search(terms, indexer):
     :return: Descending sorted pseudo-dictionary with doc_id as key and TF-IDF as value (list)
     """
 
-    # doc_relevance = {}
-    # total_num_docs = len(indexer.all_doc_ids)
-
-    # from joblib import Parallel, delayed
-    # import multiprocessing
-    # def calculate_tfidf_paralell(t):
-    #
-    #     tfs_docs = get_tfs_docs(t, indexer.index)
-    #     rel_docs = list(tfs_docs.keys())
-    #     df = len(rel_docs)
-    #     weights_docs = [(1 + np.log10(tfs_docs[key])) * np.log10(total_num_docs / df) for key in rel_docs]
-    #
-    #     for doc_id, weight in zip(rel_docs, weights_docs):
-    #         if doc_id not in doc_relevance:
-    #             doc_relevance[doc_id] = weight
-    #         else:
-    #             doc_relevance[doc_id] += weight
-    #     return doc_relevance
-    #
-    # num_cores = multiprocessing.cpu_count()
-    # results = Parallel(n_jobs=num_cores-2)(delayed(calculate_tfidf_paralell)(t) for t in terms)
-    #
-    #
-    # results_dict = defaultdict(Counter)
-    # for d in results:
-    #     results_dict = dict(Counter(results_dict) + Counter(d))
-    # sorted_relevance_alt = sorted(results_dict.items(), key=lambda x: x[1], reverse=True)
-
-
-    doc_relevance = {}
+    doc_relevance = defaultdict(lambda: 0)
     total_num_docs = len(indexer.all_doc_ids)
 
     for t in terms:
@@ -259,24 +230,45 @@ def simple_tfidf_search(terms, indexer):
         # tfs_docs = [len(rel_doc_pos[key]) for key in rel_doc_pos]
         # weights_docs = [(1 + np.log10(tf)) * np.log10(total_num_docs / df) for tf in tfs_docs]
 
+        logging.info(f'Calculations for {t}')
+        TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S:%f")
+        logging.info(f'TIMESTAMP 1 = {TIMESTAMP}')
+
         tfs_docs = get_tfs_docs(t, indexer.index)
         rel_docs = list(tfs_docs.keys())
         df = len(rel_docs)
-        if total_num_docs == df:
-            scale = 1
-        else:
-            scale = np.log10(total_num_docs / df)
 
-        weights_docs = [(1 + np.log10(tfs_docs[key])) * scale for key in rel_docs]
+        if df > 0:
 
-        for doc_id, weight in zip(rel_docs, weights_docs):
-            if doc_id not in doc_relevance:
-                doc_relevance[doc_id] = weight
+            TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S:%f")
+            logging.info(f'TIMESTAMP 2 = {TIMESTAMP}')
+
+            if total_num_docs == df:
+                scale = 1
             else:
-                doc_relevance[doc_id] += weight
+                scale = np.log10(total_num_docs / df)
+
+            # Todo: Note optimization here
+            # weights_docs = [(1 + np.log10(tfs_docs[key])) * scale for key in rel_docs]
+            weights_docs = [(1 + np.log10(value)) * scale for key, value in tfs_docs.items()]
+
+        else:
+            weights_docs = []
+
+        TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S:%f")
+        logging.info(f'TIMESTAMP 3 = {TIMESTAMP}')
+
+        # Todo: Note optimization
+        for doc_id, weight in zip(rel_docs, weights_docs):
+            doc_relevance[doc_id] += weight
+
+        # for doc_id, weight in zip(rel_docs, weights_docs):
+        #     if doc_id not in doc_relevance:
+        #         doc_relevance[doc_id] = weight
+        #     else:
+        #         doc_relevance[doc_id] += weight
 
     sorted_relevance = sorted(doc_relevance.items(), key=lambda x: x[1], reverse=True)
-
     return sorted_relevance
 
 
