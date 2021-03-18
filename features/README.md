@@ -77,20 +77,75 @@ print(wc.predict_token("World qua",n)) # In this case, only the last word is com
 
 ---
 
-## Recommendation Module (recommender.py)
-This module trains and staores a Doc2Vec model to predict the most similar lyrics of a given song. The class `RecommendationEngine` contains the model and a dictionary of the contained Song IDs. The trained [model](https://www.dropbox.com/sh/p9kpfo843mftoz6/AABBaIezWkNlNshhOx6OyZkNa?dl=0) is available for download .
+## Recommendation Module (recommender.py + lyric_similarity_calculator.py)
+This module `lyric_similarity_calculator.py` trains and stores a Doc2Vec model to predict the most similar lyrics of a given song.  The module `recommender.py` uses this lyric similarity and additional information about the songs to recommend songs from the same artist. The trained [model](https://www.dropbox.com/sh/p9kpfo843mftoz6/AABBaIezWkNlNshhOx6OyZkNa?dl=0) is available for download .
 
-### Important Functions for Connection
-- `save_model(filepath_model, filepath_dict)` saves the model in a .model and the Song ID dictionary in a pickle file
-- `load_model(filepath_model, filepath_dict)` restores the model from a .model and the Song ID dictionary from a pickle file
-- `find_similar_songs_known_song(song_id, n)` return the Song IDs for the `n` most similar songs for the given song ID
+### Important Functions for Connection 
+- `train(self, to_predict_list, plain_df, n = 5)` trains the recommendation engine for the IDs to predict
+- `get_recommendation(self, song_id, n)` Returns the top n recommended songs for the given song_id
+- `save_model(self, model_filepath = "recommendations.pkl")` Function which saved the models in the pkl file
+- `load_model(self, model_filepath = "recommendations.pkl")` Function which loades the model from the pkl file
+- `save_model_to_csv(self, csv_filepath = 'recommendations.csv')`  Saves the recommendation dictionary to a csv
 
 
 ```Py
-rec_eng = RecommendationEngine()
-rec_eng.load_model("word2vec2.model", "rec_model.pkl")
+from lyric_similarity_calculator import LyricSimilarityCalculator
+lyrics_similarity_calculator = LyricSimilarityCalculator()
+lyrics_similarity_calculator.load_model("word2vec2.model", "rec_model.pkl")
 
-print(rec_eng.find_similar_songs_known_song(168861, 10))
-# Output: [137760, 137761, 461554, 498408, 479446, 157127, 438013, 482450, 285817, 254288]
+rec_engine = RecommendationEngine(lyrics_similarity_calculator)
+
+plain_df = pd.read_csv("songs2.csv", encoding = "utf-8")
+song_ids = plain_df["id"].values
+
+rec_engine.train(to_predict_list=song_ids, plain_df=plain_df)
+
+# Saving the model in two ways
+rec_engine.save_model() #pkl dict
+rec_engine.save_model_to_csv() # csv
+
+# Load the Model
+rec_engine.load_model()
+
+# Get recommendation directly from the database
+
+print(rec_engine.get_recommendation(song_id = 168861, n = 5))
+# Output: [137760, 137761, 461554, 498408, 479446]
 ```
 
+
+
+
+
+# LDA Topic Module (topic_engine.py)
+
+The Topic Module trains a LDA Model on the available training data and creates `num_topics` number of topics. If further can predict the topic for an unseen document. The trained [model](https://www.dropbox.com/sh/ba5fdchl1p4cfi2/AAD4wQlOuXCmOM9FDhjrAkkia?dl=0) is available for download .
+
+### Important Functions for Connection 
+
+- `train(self, plain_df)` Trains the LDA model on the provided tokens
+- `predict_topic_for_single_lyrics(self, lyrics)` Predicts the topic ID for a single lyrics string
+- `print_top10_topics_terms(self, topn)` Prints the `topn` most probable tokens and the token probabilities  for each topic
+
+
+```Py
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+stemmer = PorterStemmer()
+stop_set = stopwords.words('english')
+
+plain_df = pd.read_csv("songs2.csv", encoding = "utf-8")
+
+topic_recommender = TopicRecommender(stemmer, stop_set)
+
+# Train and Save the model
+topic_recommender.train(plain_df)
+topic_recommender.save()
+
+# Load the model and predict a topic
+topic_recommender.load()
+print(predict_topic_for_single_lyrics(lyrics = "Oops, I did it again!"))
+# Output: 1
+
+
+```
