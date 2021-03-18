@@ -168,7 +168,7 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
         dict_candi = defaultdict(list)
         for idx, term in enumerate(terms[:-1]):
             for pos_1 in search_results[terms[idx]]["rel_doc_pos"][doc_id]:
-                for pos_2 in search_results[terms[idx+1]]["rel_doc_pos"][doc_id]:
+                for pos_2 in search_results[terms[idx + 1]]["rel_doc_pos"][doc_id]:
                     if phrase:
                         diff = 1
                         if pos_asterisk is not None:
@@ -198,14 +198,14 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
                         del dict_candi_fin[idx][idx2 - counter]
                         counter = counter + 1
             if len(list(dict_candi_fin.keys())) > 0:
-                max_cand = min([len(dict_candi_fin[key]) for key in dict_candi_fin.keys()])
+                max_cand = min([len(dict_candi_fin[key]) for key in dict_candi.keys()])
                 for i in np.arange(max_cand):
                     final_rel_doc_ids.append(doc_id)
 
     # Convert results to appropriate output format
     tfs_docs = dict(Counter(final_rel_doc_ids))
     tfs_docs = defaultdict(int, tfs_docs)
-    final_rel_doc_ids = sorted(list(set(final_rel_doc_ids)))
+    final_rel_doc_ids = list(set(final_rel_doc_ids))
 
     return final_rel_doc_ids, tfs_docs
 
