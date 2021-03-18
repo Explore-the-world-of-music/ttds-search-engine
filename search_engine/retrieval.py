@@ -395,11 +395,12 @@ def execute_search(query, indexer, preprocessor):
         terms = [re.sub('[^a-zA-Z]+', '', term) for term in query.split(",")]
 
         search_results = defaultdict(create_default_dict_list)
-        for term in terms:
+        for idx, term in enumerate(terms):
+            key = term + "_" + str(idx)
             # Todo: Note optimization here
             # search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
-            search_results[term]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
-            search_results[term]["rel_docs"] = list(search_results[term]["rel_doc_pos"].keys())
+            search_results[key]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
+            search_results[key]["rel_docs"] = list(search_results[key]["rel_doc_pos"].keys())
 
         rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=n)
 
