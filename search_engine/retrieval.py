@@ -312,7 +312,6 @@ def execute_search(query, indexer, preprocessor):
     :param preprocessor: Preprocessor class instance (Preprocessor)
     :return: List from the matching function containing all relevant doc_ids, List of all tfs for relevant doc_ids
     """
-    # compile search patterns to test for
     bool_pattern = re.compile(r"(&&--)|(\|\|--)|(&&)|(\|\|)")
     prox_pattern = re.compile(r"#\d+")
     phra_pattern = re.compile(r'^".*"$')
@@ -351,8 +350,6 @@ def execute_search(query, indexer, preprocessor):
         search_results = defaultdict(create_default_dict_list)
         for idx, term in enumerate(terms):
             key = term + "_" + str(idx)
-            # Todo: Note optimization here
-            # search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
             search_results[key]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
             search_results[key]["rel_docs"] = list(search_results[key]["rel_doc_pos"].keys())
 
@@ -383,14 +380,11 @@ def execute_search(query, indexer, preprocessor):
 
         search_results = defaultdict(create_default_dict_list)
         for idx, term in enumerate(terms):
-            # Todo: Note optimization here
-            # search_results[term]["rel_docs"], _ = execute_search(term, indexer, preprocessor)
             key = term + "_" + str(idx)
             search_results[key]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
             search_results[key]["rel_docs"] = list(search_results[key]["rel_doc_pos"].keys())
 
         if len(search_results.keys()) < 2:
-            # Todo: Note optimization here
             key = list(search_results.keys())[0]
             final_rel_doc_ids = search_results[key]["rel_docs"]
             # Convert results to appropriate output format
@@ -406,9 +400,7 @@ def execute_search(query, indexer, preprocessor):
 
     # if nothing else matches --> make a simple search
     else:
-        # Todo: Note optimization here
         tfs_docs = get_tfs_docs(preprocessor.preprocess(query)[0], indexer.index)
-        # results = find_docs_with_term(preprocessor.preprocess(query)[0], indexer.index)
         results = list(tfs_docs.keys())
 
         return results, tfs_docs
