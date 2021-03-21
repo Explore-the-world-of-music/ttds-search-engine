@@ -251,17 +251,12 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
     if logical_search:
 
         for query_component in tfs_docs.keys():
-            logging.info(f'Calculations for {query_component}')
-            TIMESTAMP = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            logging.info(f'TIMESTAMP = {TIMESTAMP}')
             # Extract the document frequency for the query component
             rel_docs_all = tfs_docs[query_component]["rel_docs"]
             df = len(rel_docs_all)
 
             if df > 0:
-                # Todo: Note optimization here
                 # Extract the query component frequencies but only for the RELEVANT documents
-                # tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in rel_docs_all if key in rel_docs]
                 scale = np.log10(total_num_docs / df)
                 docs_loop = list(set(tfs_docs[query_component]["tfs_docs"].keys()).intersection(rel_docs))
                 tfs_docs_all = [tfs_docs[query_component]["tfs_docs"][key] for key in docs_loop]
@@ -272,8 +267,6 @@ def calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search):
                 docs_loop = []
                 weights_docs = []
 
-            # Todo: Note optimization here
-            # rel_docs_fin = [doc_id for doc_id in rel_docs_all if doc_id in rel_docs]
             for doc_id, weight in zip(docs_loop, weights_docs):
                 if doc_id not in doc_relevance:
                     doc_relevance[doc_id] = weight
