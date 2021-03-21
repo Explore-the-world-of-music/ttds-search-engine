@@ -118,22 +118,15 @@ def bool_search(search_results, indexer, bool_vals):
 
     for idx, bool_val in enumerate(bool_vals):
         if bool_val == "&&":
-            # Todo: Note adjustment 1
-            # rel_docs = [doc_id for doc_id in rel_docs if doc_id in search_results[terms[idx + 1]]["rel_docs"]]
             rel_docs = list(set(rel_docs).intersection(search_results[terms[idx + 1]]["rel_docs"]))
 
         elif bool_val == "&&--":
-            # Todo: Note adjustment 2
-            # rel_docs = [doc_id for doc_id in rel_docs if doc_id not in search_results[terms[idx + 1]]["rel_docs"]]
             rel_docs = list(set(rel_docs) - set(search_results[terms[idx + 1]]["rel_docs"]))
 
         elif bool_val == "||":
             rel_docs = list(set(rel_docs + search_results[terms[idx + 1]]["rel_docs"]))
 
         elif bool_val == "||--":
-            # Todo: Note adjustment 3
-            # rel_docs = list(set([doc_id for doc_id in range(1,indexer.total_num_docs+1) if doc_id not in
-            #                    search_results[terms[idx + 1]]["rel_docs"]] + rel_docs))
             rel_docs = list((set(indexer.all_doc_ids) -
                              set(search_results[terms[idx + 1]]["rel_docs"])).union(set(rel_docs)))
 
