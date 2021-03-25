@@ -102,6 +102,33 @@ def get_tfs_docs_bool_search(search_results, bool_vals, indexer):
 
     return tfs_docs
 
+def get_pos_docs_bool_search(rel_docs, search_results, bool_vals):
+    """
+    Returns all term positions within relevant documents
+
+    :param: rel_docs: Relevant final documents
+    :param search_results: Results of document and tfs for each individual search term (dict)
+    :param bool_vals: List of "&&", "&&--" or "||" or "||--" (list)
+    :return: position of terms for relevant docs (dict)
+    """
+    terms = list(search_results.keys())
+    # Extract positions for the first term as basis
+    pos_docs = defaultdict(create_default_dict_list)
+    for doc in rel_docs:
+        if doc in search_results[terms[0]]["pos_docs"].keys():
+            pos_docs[doc] = search_results[terms[0]]["pos_docs"][doc]
+        else:
+            pos_docs[doc] = list()
+
+    for idx, bool_val in enumerate(bool_vals):
+
+        if bool_val in ["&&", "||", "||--"]:
+            for doc in rel_docs:
+                if doc in search_results[terms[idx+1]]["pos_docs"].keys():
+                    pos_docs[doc] = pos_docs[doc] + search_results[terms[idx+1]]["pos_docs"][doc]
+
+    return pos_docs
+
 
 def bool_search(search_results, indexer, bool_vals):
     """
@@ -157,6 +184,7 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
     # if any(|pos_1 - pos_2|<= n) --> doc_id is relevant --> append it to returned final_rel_doc_ids list
     # Find potential candidates (differentiation important for multiple words in phrase/proximity search)
     final_rel_doc_ids = list()
+    pos_docs = dict()
     for doc_id in rel_documents_all_terms:
         dict_candi = defaultdict(list)
         for idx, term in enumerate(terms[:-1]):
@@ -178,6 +206,11 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
             # If only two terms were compared, take all results
             for _ in dict_candi[0]:
                 final_rel_doc_ids.append(doc_id)
+            if len(dict_candi[0]) > 0:
+                list_pos_docs = list()
+                for idx in np.arange(len(dict_candi[0])):
+                    list_pos_docs = list_pos_docs + list(dict_candi[0][idx])
+                pos_docs[doc_id] = list(set(list_pos_docs))
         else:
             # For multiple terms delete all positions which are true across terms
             # Finally take the minimum true positions per term as the number for which the whole
@@ -195,12 +228,20 @@ def simple_proximity_search(search_results, indexer, n=1, pos_asterisk=None, phr
                 for i in np.arange(max_cand):
                     final_rel_doc_ids.append(doc_id)
 
+                pos_docs_doc = list()
+                for key in dict_candi_fin.keys():
+                    for idx in np.arange(len(dict_candi_fin[key])):
+                        pos_docs_doc = pos_docs_doc + list(dict_candi_fin[key][idx])
+                pos_docs_doc = list(set(pos_docs_doc))
+                pos_docs[doc_id] = pos_docs_doc
+
+
     # Convert results to appropriate output format
     tfs_docs = dict(Counter(final_rel_doc_ids))
     tfs_docs = defaultdict(int, tfs_docs)
     final_rel_doc_ids = list(set(final_rel_doc_ids))
 
-    return final_rel_doc_ids, tfs_docs
+    return final_rel_doc_ids, tfs_docs, pos_docs
 
 
 def simple_tfidf_search(terms, indexer):
@@ -334,13 +375,14 @@ def execute_search(query, indexer, preprocessor):
         search_results = defaultdict(create_default_dict_list)
         for idx, term in enumerate(terms):
             key = term + "_" + str(idx)
-            search_results[key]["rel_docs"], search_results[key]["tfs_docs"] = execute_search(term, indexer,
+            search_results[key]["rel_docs"], search_results[key]["tfs_docs"], search_results[key]["pos_docs"] = execute_search(term, indexer,
                                                                                               preprocessor)
 
         rel_docs = bool_search(search_results, indexer=indexer, bool_vals=type_of_bool_search)
         tfs_docs = get_tfs_docs_bool_search(search_results, bool_vals=type_of_bool_search, indexer=indexer)
+        pos_docs = get_pos_docs_bool_search(rel_docs, search_results, bool_vals=type_of_bool_search)
 
-        return rel_docs, tfs_docs
+        return rel_docs, tfs_docs, pos_docs
 
     # check if proximity search
     elif prox_pattern.search(query) is not None:
@@ -353,9 +395,9 @@ def execute_search(query, indexer, preprocessor):
             search_results[key]["rel_doc_pos"] = get_rel_doc_pos(preprocessor.preprocess(term)[0], indexer.index)
             search_results[key]["rel_docs"] = list(search_results[key]["rel_doc_pos"].keys())
 
-        rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=n)
+        rel_docs, tfs_docs, pos_docs = simple_proximity_search(search_results, indexer=indexer, n=n)
 
-        return rel_docs, tfs_docs
+        return rel_docs, tfs_docs, pos_docs
 
     # check if phrase search --> same as proximity search with n = 1
     elif phra_pattern.search(query) is not None:
@@ -392,18 +434,19 @@ def execute_search(query, indexer, preprocessor):
             for key2 in tfs_docs.keys():
                 tfs_docs[key2] = len(search_results[key]["rel_doc_pos"][key2])
 
-            return final_rel_doc_ids, tfs_docs
+            return final_rel_doc_ids, tfs_docs, search_results[key]["rel_doc_pos"]
         else:
-            rel_docs, tfs_docs = simple_proximity_search(search_results, indexer=indexer, n=1, phrase=True,
+            rel_docs, tfs_docs, pos_docs = simple_proximity_search(search_results, indexer=indexer, n=1, phrase=True,
                                                          pos_asterisk=pos_asterisk)
-            return rel_docs, tfs_docs
+            return rel_docs, tfs_docs, pos_docs
 
     # if nothing else matches --> make a simple search
     else:
         tfs_docs = get_tfs_docs(preprocessor.preprocess(query)[0], indexer.index)
         results = list(tfs_docs.keys())
+        pos_docs = get_rel_doc_pos(preprocessor.preprocess(query)[0], indexer.index)
 
-        return results, tfs_docs
+        return results, tfs_docs, pos_docs
 
 
 def execute_queries_and_save_results(query_num, query, search_type, indexer, preprocessor, config):
@@ -422,7 +465,7 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
 
     # Execute search for boolean queries
     if search_type == "boolean":
-        rel_docs, _ = execute_search(query, indexer, preprocessor)
+        rel_docs, _, _ = execute_search(query, indexer, preprocessor)
         if len(rel_docs) > 0:
             rel_docs.sort(key=float)
             for rel_doc in rel_docs:
@@ -457,7 +500,7 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
 
         # check if boolean search component is in query
         if search_pattern.search(query) is not None:
-            rel_docs, tfs_docs = execute_search(query, indexer, preprocessor)
+            rel_docs, tfs_docs, pos_docs = execute_search(query, indexer, preprocessor)
             rel_docs_with_tfidf = calculate_tfidf(rel_docs, tfs_docs, indexer, logical_search)
         else:
             terms = query.split()
@@ -478,6 +521,20 @@ def execute_queries_and_save_results(query_num, query, search_type, indexer, pre
                 rel_docs_with_tfidf_scaled = list()
                 for idx, _ in enumerate(rel_docs_with_tfidf):
                     rel_docs_with_tfidf_scaled.append((rel_docs_with_tfidf[idx][0], rel_docs_with_tfidf[idx][1] / max_value * 10))
+
+            # Finalize positions return to show in front end
+            rel_docs_for_pos = [x[0] for x in rel_docs_with_tfidf_scaled]
+            if search_pattern.search(query) is not None:
+                pos_docs_fin = defaultdict(list, dict())
+                for doc in rel_docs_for_pos:
+                    pos_docs_fin[doc] = sorted(pos_docs[doc], key = float)
+            else:
+                pos_docs_fin = defaultdict(list, dict())
+                for doc in rel_docs_for_pos:
+                    for term in terms:
+                        if doc in indexer.index[term].keys():
+                            pos_docs_fin[doc] = pos_docs_fin[doc] + indexer.index[term][doc]
+                            pos_docs_fin[doc] = sorted(pos_docs_fin[doc], key = float)
 
             # Write output
             for doc_id, value in rel_docs_with_tfidf_scaled:
